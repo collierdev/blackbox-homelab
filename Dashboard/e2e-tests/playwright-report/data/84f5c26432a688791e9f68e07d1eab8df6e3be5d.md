@@ -1,0 +1,105 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e9]:
+        - heading "Pi Dashboard" [level=1] [ref=e10]
+        - paragraph [ref=e11]: blackbox
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - img [ref=e14]
+        - generic [ref=e18]: Connected
+      - button "Toggle theme" [ref=e19]:
+        - img [ref=e20]
+  - navigation [ref=e22]:
+    - generic [ref=e24]:
+      - button "System" [ref=e25]:
+        - img [ref=e26]
+        - generic [ref=e31]: System
+      - button "Smart Home" [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e36]: Smart Home
+      - button "Calendar & Tasks" [ref=e37]:
+        - img [ref=e38]
+        - generic [ref=e40]: Calendar & Tasks
+  - main [ref=e41]:
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - button "Calendar" [ref=e44]
+        - button "Tasks" [ref=e45]
+      - generic [ref=e47]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - heading "Tasks" [level=2] [ref=e51]
+            - paragraph [ref=e52]: 0 of 3 completed
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - img [ref=e55]
+              - combobox [ref=e57] [cursor=pointer]:
+                - option "All Projects" [selected]
+            - generic [ref=e58] [cursor=pointer]:
+              - checkbox "Show completed" [ref=e59]
+              - text: Show completed
+            - button "New Task" [ref=e60]:
+              - img [ref=e61]
+              - text: New Task
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "Unknown Project" [level=3] [ref=e66]
+            - generic [ref=e67]: (3)
+          - generic [ref=e68]:
+            - generic [ref=e70]:
+              - button [ref=e71]:
+                - img [ref=e72]
+              - generic [ref=e75]:
+                - heading "Task to Complete" [level=4] [ref=e77]
+                - generic [ref=e78]:
+                  - button "Add subtask" [ref=e79]:
+                    - img [ref=e80]
+                  - button "Edit" [ref=e81]:
+                    - img [ref=e82]
+                  - button "Delete" [ref=e85]:
+                    - img [ref=e86]
+            - generic [ref=e90]:
+              - button [ref=e91]:
+                - img [ref=e92]
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - heading "Test Task from E2E" [level=4] [ref=e97]
+                  - paragraph [ref=e98]: This is a test task created by Playwright
+                  - generic [ref=e100]:
+                    - img [ref=e101]
+                    - text: High
+                - generic [ref=e103]:
+                  - button "Add subtask" [ref=e104]:
+                    - img [ref=e105]
+                  - button "Edit" [ref=e106]:
+                    - img [ref=e107]
+                  - button "Delete" [ref=e110]:
+                    - img [ref=e111]
+            - generic [ref=e115]:
+              - button [ref=e116]:
+                - img [ref=e117]
+              - generic [ref=e120]:
+                - generic [ref=e121]:
+                  - heading "Check E2E Report" [level=4] [ref=e122]
+                  - generic [ref=e123]:
+                    - generic [ref=e124]:
+                      - img [ref=e125]
+                      - text: High
+                    - generic [ref=e127]:
+                      - img [ref=e128]
+                      - text: Jan 18, 2026 (Overdue)
+                - generic [ref=e130]:
+                  - button "Add subtask" [ref=e131]:
+                    - img [ref=e132]
+                  - button "Edit" [ref=e133]:
+                    - img [ref=e134]
+                  - button "Delete" [ref=e137]:
+                    - img [ref=e138]
+  - button [ref=e141]:
+    - img [ref=e142]
+```

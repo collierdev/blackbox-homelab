@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Neumorphism Design Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #e0e5ec;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Neumorphic Header */
+    .header {
+      background: #e0e5ec;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      border-radius: 24px;
+      box-shadow: 
+        9px 9px 16px #a3b1c6,
+        -9px -9px 16px #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 56px;
+      height: 56px;
+      background: #e0e5ec;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .header-info h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .header-info p {
+      font-size: 14px;
+      color: #718096;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-badge {
+      padding: 10px 20px;
+      background: #e0e5ec;
+      border-radius: 20px;
+      box-shadow: 
+        4px 4px 8px #a3b1c6,
+        -4px -4px 8px #ffffff;
+      color: #48bb78;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #48bb78;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
+    }
+
+    .btn-neumorphic {
+      width: 44px;
+      height: 44px;
+      background: #e0e5ec;
+      border: none;
+      border-radius: 12px;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 
+        4px 4px 8px #a3b1c6,
+        -4px -4px 8px #ffffff;
+      transition: all 0.2s;
+    }
+
+    .btn-neumorphic:active {
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    /* Neumorphic Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .neumorphic-card {
+      background: #e0e5ec;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 
+        9px 9px 16px #a3b1c6,
+        -9px -9px 16px #ffffff;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .neumorphic-card:hover {
+      box-shadow: 
+        12px 12px 24px #a3b1c6,
+        -12px -12px 24px #ffffff;
+      transform: translateY(-4px);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .stat-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: #e0e5ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 42px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .progress-container {
+      margin-top: 24px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #718096;
+      font-weight: 600;
+    }
+
+    .progress-bar {
+      height: 12px;
+      background: #e0e5ec;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      transition: width 0.5s ease;
+      box-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 0.2),
+        inset -2px -2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Service Cards */
+    .services-section {
+      margin-top: 48px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 24px;
+      padding-left: 8px;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .service-neumorphic {
+      background: #e0e5ec;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 
+        8px 8px 16px #a3b1c6,
+        -8px -8px 16px #ffffff;
+      transition: all 0.3s ease;
+    }
+
+    .service-neumorphic:hover {
+      box-shadow: 
+        10px 10px 20px #a3b1c6,
+        -10px -10px 20px #ffffff;
+      transform: translateY(-4px);
+    }
+
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .service-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: #e0e5ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .service-info {
+      flex: 1;
+    }
+
+    .service-info h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .service-info p {
+      font-size: 12px;
+      color: #718096;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .service-status {
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e0e5ec;
+      color: #48bb78;
+      box-shadow: 
+        inset 2px 2px 4px #a3b1c6,
+        inset -2px -2px 4px #ffffff;
+    }
+
+    .service-status.stopped {
+      color: #718096;
+    }
+
+    .service-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .btn-service {
+      padding: 10px 20px;
+      border-radius: 12px;
+      border: none;
+      background: #e0e5ec;
+      color: #2d3748;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 
+        4px 4px 8px #a3b1c6,
+        -4px -4px 8px #ffffff;
+    }
+
+    .btn-service:active {
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .btn-service.primary {
+      color: #667eea;
+    }
+
+    .btn-service.success {
+      color: #48bb78;
+    }
+
+    .btn-service.danger {
+      color: #f56565;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding: 8px;
+      background: #e0e5ec;
+      border-radius: 16px;
+      box-shadow: 
+        inset 4px 4px 8px #a3b1c6,
+        inset -4px -4px 8px #ffffff;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #718096;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tab.active {
+      background: #e0e5ec;
+      color: #667eea;
+      box-shadow: 
+        4px 4px 8px #a3b1c6,
+        -4px -4px 8px #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Neumorphic Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">⚡</div>
+        <div class="header-info">
+          <h1>Pi Dashboard</h1>
+          <p>raspberrypi.local</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-badge">
+          <div class="status-dot"></div>
+          <span>Connected</span>
+        </div>
+        <button class="btn-neumorphic">🌙</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab active">
+        <span>📊</span>
+        <span>System</span>
+      </button>
+      <button class="tab">
+        <span>🏠</span>
+        <span>Smart Home</span>
+      </button>
+    </nav>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="neumorphic-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💻</div>
+            <div class="stat-content">
+              <div class="stat-label">CPU Usage</div>
+              <div class="stat-value">42.5%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>4 cores @ 2.4 GHz</span>
+            <span>42.5%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 42.5%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="neumorphic-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💾</div>
+            <div class="stat-content">
+              <div class="stat-label">Memory</div>
+              <div class="stat-value">68.2%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>5.4 GB / 7.9 GB</span>
+            <span>68.2%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 68.2%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="neumorphic-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💿</div>
+            <div class="stat-content">
+              <div class="stat-label">Disk Usage</div>
+              <div class="stat-value">34.8%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>312 GB / 899 GB</span>
+            <span>34.8%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 34.8%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="neumorphic-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">🌡️</div>
+            <div class="stat-content">
+              <div class="stat-label">Temperature</div>
+              <div class="stat-value">52.3°C</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; color: #718096; font-weight: 600;">
+          CPU Temperature · Normal
+        </div>
+      </div>
+    </div>
+
+    <!-- Services Section -->
+    <div class="services-section">
+      <h2 class="section-title">Services</h2>
+      <div class="services-grid">
+        <div class="service-neumorphic">
+          <div class="service-header">
+            <div class="service-icon">🎬</div>
+            <div class="service-info">
+              <h3>Jellyfin</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status">Running</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-service danger">Stop</button>
+            <button class="btn-service primary">Restart</button>
+            <button class="btn-service primary" style="margin-left: auto;">Open</button>
+          </div>
+        </div>
+
+        <div class="service-neumorphic">
+          <div class="service-header">
+            <div class="service-icon">🤖</div>
+            <div class="service-info">
+              <h3>n8n</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status">Running</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-service danger">Stop</button>
+            <button class="btn-service primary">Restart</button>
+            <button class="btn-service primary" style="margin-left: auto;">Open</button>
+          </div>
+        </div>
+
+        <div class="service-neumorphic">
+          <div class="service-header">
+            <div class="service-icon">🏠</div>
+            <div class="service-info">
+              <h3>Home Assistant</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status stopped">Stopped</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-service success">Start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

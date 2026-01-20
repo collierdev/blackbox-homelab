@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Matrix Cyberpunk Style</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0e27;
+      color: #00ff41;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        repeating-linear-gradient(
+          0deg,
+          rgba(0, 255, 65, 0.03) 0px,
+          transparent 1px,
+          transparent 2px,
+          rgba(0, 255, 65, 0.03) 3px
+        ),
+        radial-gradient(circle at 20% 50%, rgba(0, 255, 65, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 255, 65, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .header {
+      border: 2px solid #00ff41;
+      padding: 24px;
+      margin-bottom: 32px;
+      background: rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+      position: relative;
+    }
+    .header::before {
+      content: '$> ';
+      position: absolute;
+      left: 12px;
+      top: 24px;
+      color: #00ff41;
+      font-weight: bold;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+      margin-left: 48px;
+      margin-bottom: 8px;
+    }
+    .header p {
+      margin-left: 48px;
+      font-size: 12px;
+      color: #00cc00;
+      opacity: 0.8;
+    }
+    .terminal-command {
+      border: 2px solid #00ff41;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
+      position: relative;
+    }
+    .terminal-command::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      height: 3px;
+      background: linear-gradient(90deg, #00ff41, transparent);
+    }
+    .terminal-line {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #00ff41;
+      margin-bottom: 12px;
+    }
+    .terminal-prompt {
+      color: #00ff41;
+      font-weight: bold;
+    }
+    .terminal-cmd {
+      color: #ffff00;
+      text-shadow: 0 0 5px #ffff00;
+    }
+    .terminal-output {
+      color: #00cc00;
+      margin-left: 24px;
+      margin-top: 12px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .cyber-card {
+      border: 2px solid #00ff41;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 24px;
+      position: relative;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+    }
+    .cyber-card::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      height: 4px;
+      background: linear-gradient(90deg, #00ff41, transparent);
+    }
+    .cyber-card::after {
+      content: '> ';
+      position: absolute;
+      top: 24px;
+      left: 12px;
+      color: #00ff41;
+      opacity: 0.5;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #00ff41;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      opacity: 0.7;
+      margin-left: 24px;
+    }
+    .stat-value {
+      font-size: 48px;
+      font-weight: 700;
+      color: #00ff41;
+      text-shadow: 0 0 20px #00ff41;
+      margin-bottom: 16px;
+      margin-left: 24px;
+      font-family: 'Courier New', monospace;
+    }
+    .progress-bar {
+      height: 8px;
+      background: rgba(0, 255, 65, 0.1);
+      border: 1px solid #00ff41;
+      position: relative;
+      overflow: hidden;
+      margin-left: 24px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #00ff41;
+      box-shadow: 0 0 10px #00ff41;
+      transition: width 0.5s;
+    }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .service-cyber {
+      border: 2px solid #00ff41;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+      position: relative;
+    }
+    .service-cyber::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      height: 3px;
+      background: linear-gradient(90deg, #00ff41, transparent);
+    }
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+      padding-bottom: 12px;
+    }
+    .service-icon {
+      font-size: 32px;
+      filter: drop-shadow(0 0 5px #00ff41);
+    }
+    .service-info h3 {
+      font-size: 16px;
+      color: #00ff41;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier New', monospace;
+    }
+    .status-indicator {
+      margin-left: auto;
+      width: 12px;
+      height: 12px;
+      background: #00ff41;
+      box-shadow: 0 0 10px #00ff41;
+      animation: pulse 2s infinite;
+      border-radius: 50%;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 10px #00ff41; }
+      50% { opacity: 0.5; box-shadow: 0 0 20px #00ff41; }
+    }
+    .service-item {
+      padding: 6px 0;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #00cc00;
+      font-family: 'Courier New', monospace;
+    }
+    .status-ok {
+      color: #00ff41;
+      font-weight: bold;
+    }
+    .status-off {
+      color: #666;
+    }
+    .cyber-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 2px solid #00ff41;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 8px;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .cyber-btn:hover {
+      background: #00ff41;
+      color: #0a0e27;
+      box-shadow: 0 0 20px #00ff41;
+    }
+    .terminal-cursor {
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>PI_DASHBOARD.exe</h1>
+      <p>raspberrypi.local [CONNECTED]</p>
+    </header>
+    
+    <div class="terminal-command">
+      <div class="terminal-line">
+        <span class="terminal-prompt">$></span> <span class="terminal-cmd">system.status</span>
+      </div>
+      <div class="terminal-output">
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted rgba(0, 255, 65, 0.3);">
+          <span style="color: #00cc00;">SYSTEM_INIT_COMPLETE</span>
+          <span style="color: #00ff41; font-weight: bold;">[OK]</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="cyber-card">
+        <div class="stat-label">CPU_USAGE</div>
+        <div class="stat-value">42.5%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 42.5%"></div>
+        </div>
+      </div>
+      <div class="cyber-card">
+        <div class="stat-label">MEMORY</div>
+        <div class="stat-value">68.2%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 68.2%"></div>
+        </div>
+      </div>
+      <div class="cyber-card">
+        <div class="stat-label">DISK_USAGE</div>
+        <div class="stat-value">34.8%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 34.8%"></div>
+        </div>
+      </div>
+      <div class="cyber-card">
+        <div class="stat-label">TEMPERATURE</div>
+        <div class="stat-value">52.3°C</div>
+        <div style="margin-left: 24px; margin-top: 12px; font-size: 11px; color: #00cc00; opacity: 0.7;">STATUS: NORMAL</div>
+      </div>
+    </div>
+
+    <div class="terminal-command">
+      <div class="terminal-line">
+        <span class="terminal-prompt">$></span> <span class="terminal-cmd">services.list</span>
+      </div>
+      <div class="terminal-output">
+        <div class="service-item">
+          <span class="status-ok">[OK]</span>
+          <span>jellyfin.service - Running</span>
+        </div>
+        <div class="service-item">
+          <span class="status-ok">[OK]</span>
+          <span>n8n.service - Running</span>
+        </div>
+        <div class="service-item">
+          <span class="status-off">[OFF]</span>
+          <span>home-assistant.service - Stopped</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <div style="border: 2px solid #00ff41; padding: 16px; margin-bottom: 24px; background: rgba(0, 255, 65, 0.05); box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);">
+        <div style="color: #00ff41; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-family: 'Courier New', monospace;">$> SERVICE_CONTROL</div>
+      </div>
+      <div class="services-grid">
+        <div class="service-cyber">
+          <div class="service-header">
+            <div class="service-icon">🎬</div>
+            <div class="service-info">
+              <h3>Jellyfin</h3>
+            </div>
+            <div class="status-indicator"></div>
+          </div>
+          <button class="cyber-btn">STOP</button>
+          <button class="cyber-btn">RESTART</button>
+          <button class="cyber-btn">OPEN</button>
+        </div>
+        <div class="service-cyber">
+          <div class="service-header">
+            <div class="service-icon">🤖</div>
+            <div class="service-info">
+              <h3>n8n</h3>
+            </div>
+            <div class="status-indicator"></div>
+          </div>
+          <button class="cyber-btn">STOP</button>
+          <button class="cyber-btn">RESTART</button>
+          <button class="cyber-btn">OPEN</button>
+        </div>
+        <div class="service-cyber">
+          <div class="service-header">
+            <div class="service-icon">🏠</div>
+            <div class="service-info">
+              <h3>Home_Assistant</h3>
+            </div>
+            <div class="status-indicator" style="background: #666; box-shadow: 0 0 10px #666;"></div>
+          </div>
+          <button class="cyber-btn">START</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="terminal-command" style="margin-top: 32px;">
+      <div class="terminal-line">
+        <span class="terminal-prompt">$></span> <span class="terminal-cursor" style="color: #00ff41;">_</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Glassmorphism Design Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.3) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Glass Header */
+    .header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-info h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-info p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-badge {
+      padding: 10px 20px;
+      background: rgba(74, 222, 128, 0.2);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(74, 222, 128, 0.8);
+    }
+
+    /* Glass Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.6) 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0.6) 100%);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .stat-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 42px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-container {
+      margin-top: 20px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.6) 0%, 
+        rgba(255, 255, 255, 0.9) 100%);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Service Cards */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .service-glass {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .service-glass:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .service-glass.running {
+      border-left: 4px solid rgba(74, 222, 128, 0.8);
+    }
+
+    .service-glass.stopped {
+      border-left: 4px solid rgba(255, 255, 255, 0.3);
+      opacity: 0.7;
+    }
+
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .service-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    .service-info {
+      flex: 1;
+    }
+
+    .service-info h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .service-info p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+    }
+
+    .service-status {
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .service-status.running {
+      background: rgba(74, 222, 128, 0.3);
+      border: 1px solid rgba(74, 222, 128, 0.5);
+      color: white;
+    }
+
+    .service-status.stopped {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .service-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-glass {
+      padding: 10px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.05);
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 24px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .section {
+      margin-top: 40px;
+    }
+
+    .sparkline {
+      width: 120px;
+      height: 40px;
+      opacity: 0.6;
+      margin-top: 12px;
+    }
+
+    svg.sparkline {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Glass Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">⚡</div>
+        <div class="header-info">
+          <h1>Pi Dashboard</h1>
+          <p>raspberrypi.local</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-badge">
+          <div class="status-dot"></div>
+          <span>Connected</span>
+        </div>
+        <button class="btn-glass">🌙</button>
+      </div>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="glass-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💻</div>
+            <div class="stat-content">
+              <div class="stat-label">CPU Usage</div>
+              <div class="stat-value">42.5%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>4 cores @ 2.4 GHz</span>
+            <span>42.5%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 42.5%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💾</div>
+            <div class="stat-content">
+              <div class="stat-label">Memory</div>
+              <div class="stat-value">68.2%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>5.4 GB / 7.9 GB</span>
+            <span>68.2%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 68.2%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">💿</div>
+            <div class="stat-content">
+              <div class="stat-label">Disk Usage</div>
+              <div class="stat-value">34.8%</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>312 GB / 899 GB</span>
+            <span>34.8%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 34.8%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="stat-header">
+          <div class="stat-title">
+            <div class="stat-icon">🌡️</div>
+            <div class="stat-content">
+              <div class="stat-label">Temperature</div>
+              <div class="stat-value">52.3°C</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; color: rgba(255,255,255,0.7);">
+          CPU Temperature · Normal
+        </div>
+      </div>
+    </div>
+
+    <!-- Services Section -->
+    <div class="section">
+      <h2 class="section-title">Services</h2>
+      <div class="services-grid">
+        <div class="service-glass running">
+          <div class="service-header">
+            <div class="service-icon">🎬</div>
+            <div class="service-info">
+              <h3>Jellyfin</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status running">Running</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-glass">Stop</button>
+            <button class="btn-glass">Restart</button>
+            <button class="btn-glass" style="margin-left: auto;">Open</button>
+          </div>
+        </div>
+
+        <div class="service-glass running">
+          <div class="service-header">
+            <div class="service-icon">🤖</div>
+            <div class="service-info">
+              <h3>n8n</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status running">Running</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-glass">Stop</button>
+            <button class="btn-glass">Restart</button>
+            <button class="btn-glass" style="margin-left: auto;">Open</button>
+          </div>
+        </div>
+
+        <div class="service-glass stopped">
+          <div class="service-header">
+            <div class="service-icon">🏠</div>
+            <div class="service-info">
+              <h3>Home Assistant</h3>
+              <p>Docker</p>
+            </div>
+            <span class="service-status stopped">Stopped</span>
+          </div>
+          <div class="service-actions">
+            <button class="btn-glass">Start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

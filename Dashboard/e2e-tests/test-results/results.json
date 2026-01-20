@@ -1,0 +1,1000 @@
+{
+  "config": {
+    "configFile": "/home/jwcollie/Dashboard/e2e-tests/playwright.config.ts",
+    "rootDir": "/home/jwcollie/Dashboard/e2e-tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/jwcollie/Dashboard/e2e-tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/jwcollie/Dashboard/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 1,
+    "webServer": {
+      "command": "echo \"Dashboard should already be running\"",
+      "url": "http://192.168.50.39",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "calendar-todos.spec.ts",
+      "file": "calendar-todos.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Calendar & Tasks Feature",
+          "file": "calendar-todos.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Navigation",
+              "file": "calendar-todos.spec.ts",
+              "line": 12,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show Calendar & Tasks tab",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5224,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:24.407Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-2ecb94c071742db373e2",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 13,
+                  "column": 9
+                },
+                {
+                  "title": "should navigate to Calendar & Tasks view",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4543,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:30.813Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-60caff47009f122b8753",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 18,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Calendar View",
+              "file": "calendar-todos.spec.ts",
+              "line": 28,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show calendar header with view options",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5060,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:35.406Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-baf90c9a962013849d1c",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 34,
+                  "column": 9
+                },
+                {
+                  "title": "should show Today button and navigation arrows",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5183,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:40.498Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-d9c99b200f4894aa1986",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 43,
+                  "column": 9
+                },
+                {
+                  "title": "should show New Event button",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4652,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:45.708Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-906a61d8e3ba60f3dc7c",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 49,
+                  "column": 9
+                },
+                {
+                  "title": "should switch between calendar views",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6489,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:50.408Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-78446fe118bd2238b891",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 53,
+                  "column": 9
+                },
+                {
+                  "title": "should open event form when clicking New Event",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5910,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:18:56.942Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-66abd7fa26415f6c0735",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 67,
+                  "column": 9
+                },
+                {
+                  "title": "should create a new event",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6380,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:02.899Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-0d0a2f4640354b66d4ec",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 76,
+                  "column": 9
+                },
+                {
+                  "title": "should filter events by project",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5249,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:09.333Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-789900722d51e0577f5a",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 92,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Tasks View",
+              "file": "calendar-todos.spec.ts",
+              "line": 103,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show tasks header",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6113,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:14.610Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-f92a80978657d7469ea9",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 116,
+                  "column": 9
+                },
+                {
+                  "title": "should show New Task button",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6197,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:20.752Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-8419b5dc522d917fdc9c",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 120,
+                  "column": 9
+                },
+                {
+                  "title": "should show project filter",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6392,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:26.975Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-fa77cba080dfe3ef973d",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 124,
+                  "column": 9
+                },
+                {
+                  "title": "should show completed tasks toggle",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5897,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:33.389Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-fdb40a486d3ea030d93e",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 129,
+                  "column": 9
+                },
+                {
+                  "title": "should open task form when clicking New Task",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6946,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:39.312Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-f2ca91b9ce214c8347f3",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 133,
+                  "column": 9
+                },
+                {
+                  "title": "should create a new task",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 15329,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:19:46.282Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-b05297d10b38ec86bb91",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 142,
+                  "column": 9
+                },
+                {
+                  "title": "should complete a task",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "timedOut",
+                          "duration": 32747,
+                          "error": {
+                            "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                            "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                          },
+                          "errors": [
+                            {
+                              "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                            },
+                            {
+                              "location": {
+                                "file": "/home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts",
+                                "column": 22,
+                                "line": 175
+                              },
+                              "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=Task to Complete').locator('..').locator('button').first()\u001b[22m\n\n\n  173 |       const taskRow = page.locator('text=Task to Complete').locator('..');\n  174 |       const checkbox = taskRow.locator('button').first();\n> 175 |       await checkbox.click();\n      |                      ^\n  176 |       await page.waitForTimeout(500);\n  177 |\n  178 |       // Task should have completed styling (or disappear if \"Show completed\" is off)\n    at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:175:22"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:20:01.664Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/error-context.md"
+                            }
+                          ]
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-f4f904a2f429ba0dda25",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 164,
+                  "column": 9
+                },
+                {
+                  "title": "should show/hide completed tasks",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 7509,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:20:36.228Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-2d282cbed655f88c83d8",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 181,
+                  "column": 9
+                },
+                {
+                  "title": "should delete a task",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 22590,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Task to Delete')\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Task to Delete')\u001b[22m\n\u001b[2m    9 × locator resolved to <h4 class=\"text-base font-medium text-gray-900 dark:text-white\">Task to Delete</h4>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Task to Delete')\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Task to Delete')\u001b[22m\n\u001b[2m    9 × locator resolved to <h4 class=\"text-base font-medium text-gray-900 dark:text-white\">Task to Delete</h4>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n\n    at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:209:61",
+                            "location": {
+                              "file": "/home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts",
+                              "column": 61,
+                              "line": 209
+                            },
+                            "snippet": "  207 |\n  208 |       // Task should be removed\n> 209 |       await expect(page.locator('text=Task to Delete')).not.toBeVisible();\n      |                                                             ^\n  210 |     });\n  211 |   });\n  212 |"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts",
+                                "column": 61,
+                                "line": 209
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('text=Task to Delete')\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Task to Delete')\u001b[22m\n\u001b[2m    9 × locator resolved to <h4 class=\"text-base font-medium text-gray-900 dark:text-white\">Task to Delete</h4>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n\n\n  207 |\n  208 |       // Task should be removed\n> 209 |       await expect(page.locator('text=Task to Delete')).not.toBeVisible();\n      |                                                             ^\n  210 |     });\n  211 |   });\n  212 |\n    at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:209:61"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:20:44.139Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/home/jwcollie/Dashboard/e2e-tests/test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts",
+                            "column": 61,
+                            "line": 209
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-59b448724ded93829f70",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 191,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Projects",
+              "file": "calendar-todos.spec.ts",
+              "line": 213,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should group tasks by project",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5895,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:21:08.296Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-aede44e26701a737787e",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 221,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Integration",
+              "file": "calendar-todos.spec.ts",
+              "line": 229,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should maintain state when switching between views",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 18073,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:21:14.449Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-caa9496d37f1f18e28f2",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 230,
+                  "column": 9
+                },
+                {
+                  "title": "should work with system dashboard tabs",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6814,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:21:32.570Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-71f064147d3ec46d6b58",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 257,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Error Handling",
+              "file": "calendar-todos.spec.ts",
+              "line": 273,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle empty form submission",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 10768,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:21:39.416Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-a41b0475b7311e40fb94",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 274,
+                  "column": 9
+                },
+                {
+                  "title": "should allow canceling form",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6124,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-20T03:21:50.213Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "be2d89835bcca6139298-b5e09e8a5de831aaae7d",
+                  "file": "calendar-todos.spec.ts",
+                  "line": 292,
+                  "column": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-01-20T03:18:22.479Z",
+    "duration": 213993.39500000002,
+    "expected": 21,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

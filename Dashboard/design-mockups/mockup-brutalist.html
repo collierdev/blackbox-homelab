@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Brutalist Design</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #ff6b6b;
+      padding: 20px;
+      color: #000;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #fff;
+      border: 8px solid #000;
+      padding: 32px;
+    }
+    .header {
+      border: 6px solid #000;
+      padding: 24px;
+      margin-bottom: 32px;
+      background: #4ecdc4;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      border: 6px solid #000;
+      padding: 24px;
+      background: #ffe66d;
+      transform: rotate(-1deg);
+      transition: transform 0.2s;
+    }
+    .stat-card:nth-child(even) {
+      transform: rotate(1deg);
+      background: #95e1d3;
+    }
+    .stat-card:hover {
+      transform: rotate(0deg) scale(1.05);
+    }
+    .stat-label {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .stat-value {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #000;
+      border: 4px solid #000;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #ff6b6b;
+      transition: width 0.5s;
+    }
+    .services-section {
+      border: 6px solid #000;
+      padding: 24px;
+      background: #a8e6cf;
+    }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .service-card {
+      border: 4px solid #000;
+      padding: 20px;
+      background: #fff;
+    }
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .service-icon {
+      font-size: 32px;
+    }
+    .service-info h3 {
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .badge {
+      margin-left: auto;
+      padding: 8px 16px;
+      background: #000;
+      color: #fff;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .btn {
+      padding: 12px 24px;
+      background: #000;
+      color: #fff;
+      border: none;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+    .btn:hover {
+      background: #ff6b6b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⚡ Pi Dashboard</h1>
+      <div style="margin-top: 12px; font-weight: 900;">raspberrypi.local · CONNECTED</div>
+    </header>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">CPU Usage</div>
+        <div class="stat-value">42.5%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 42.5%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Memory</div>
+        <div class="stat-value">68.2%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 68.2%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Disk Usage</div>
+        <div class="stat-value">34.8%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 34.8%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Temperature</div>
+        <div class="stat-value">52.3°C</div>
+      </div>
+    </div>
+    <div class="services-section">
+      <h2 style="font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px;">Services</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-header">
+            <div class="service-icon">🎬</div>
+            <div class="service-info">
+              <h3>Jellyfin</h3>
+            </div>
+            <span class="badge">Running</span>
+          </div>
+          <button class="btn">Stop</button>
+          <button class="btn">Restart</button>
+          <button class="btn">Open</button>
+        </div>
+        <div class="service-card">
+          <div class="service-header">
+            <div class="service-icon">🤖</div>
+            <div class="service-info">
+              <h3>n8n</h3>
+            </div>
+            <span class="badge">Running</span>
+          </div>
+          <button class="btn">Stop</button>
+          <button class="btn">Restart</button>
+          <button class="btn">Open</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

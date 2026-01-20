@@ -1,0 +1,117 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e9]:
+        - heading "Pi Dashboard" [level=1] [ref=e10]
+        - paragraph [ref=e11]: blackbox
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - img [ref=e14]
+        - generic [ref=e18]: Connected
+      - button "Toggle theme" [ref=e19]:
+        - img [ref=e20]
+  - navigation [ref=e22]:
+    - generic [ref=e24]:
+      - button "System" [ref=e25]:
+        - img [ref=e26]
+        - generic [ref=e31]: System
+      - button "Smart Home" [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e36]: Smart Home
+      - button "Calendar & Tasks" [ref=e37]:
+        - img [ref=e38]
+        - generic [ref=e40]: Calendar & Tasks
+  - main [ref=e41]:
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - button "Calendar" [ref=e44]
+        - button "Tasks" [ref=e45]
+      - generic [ref=e47]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - heading "Tasks" [level=2] [ref=e51]
+            - paragraph [ref=e52]: 0 of 4 completed
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - img [ref=e55]
+              - combobox [ref=e57] [cursor=pointer]:
+                - option "All Projects" [selected]
+            - generic [ref=e58] [cursor=pointer]:
+              - checkbox "Show completed" [ref=e59]
+              - text: Show completed
+            - button "New Task" [ref=e60]:
+              - img [ref=e61]
+              - text: New Task
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "Unknown Project" [level=3] [ref=e66]
+            - generic [ref=e67]: (4)
+          - generic [ref=e68]:
+            - generic [ref=e70]:
+              - button [ref=e71]:
+                - img [ref=e72]
+              - generic [ref=e75]:
+                - heading "Task to Delete" [level=4] [ref=e77]
+                - generic [ref=e78]:
+                  - button "Add subtask" [ref=e79]:
+                    - img [ref=e80]
+                  - button "Edit" [ref=e81]:
+                    - img [ref=e82]
+                  - button "Delete" [active] [ref=e85]:
+                    - img [ref=e86]
+            - generic [ref=e90]:
+              - button [ref=e91]:
+                - img [ref=e92]
+              - generic [ref=e95]:
+                - heading "Task to Complete" [level=4] [ref=e97]
+                - generic [ref=e98]:
+                  - button "Add subtask" [ref=e99]:
+                    - img [ref=e100]
+                  - button "Edit" [ref=e101]:
+                    - img [ref=e102]
+                  - button "Delete" [ref=e105]:
+                    - img [ref=e106]
+            - generic [ref=e110]:
+              - button [ref=e111]:
+                - img [ref=e112]
+              - generic [ref=e115]:
+                - generic [ref=e116]:
+                  - heading "Test Task from E2E" [level=4] [ref=e117]
+                  - paragraph [ref=e118]: This is a test task created by Playwright
+                  - generic [ref=e120]:
+                    - img [ref=e121]
+                    - text: High
+                - generic [ref=e123]:
+                  - button "Add subtask" [ref=e124]:
+                    - img [ref=e125]
+                  - button "Edit" [ref=e126]:
+                    - img [ref=e127]
+                  - button "Delete" [ref=e130]:
+                    - img [ref=e131]
+            - generic [ref=e135]:
+              - button [ref=e136]:
+                - img [ref=e137]
+              - generic [ref=e140]:
+                - generic [ref=e141]:
+                  - heading "Check E2E Report" [level=4] [ref=e142]
+                  - generic [ref=e143]:
+                    - generic [ref=e144]:
+                      - img [ref=e145]
+                      - text: High
+                    - generic [ref=e147]:
+                      - img [ref=e148]
+                      - text: Jan 18, 2026 (Overdue)
+                - generic [ref=e150]:
+                  - button "Add subtask" [ref=e151]:
+                    - img [ref=e152]
+                  - button "Edit" [ref=e153]:
+                    - img [ref=e154]
+                  - button "Delete" [ref=e157]:
+                    - img [ref=e158]
+  - button [ref=e161]:
+    - img [ref=e162]
+```

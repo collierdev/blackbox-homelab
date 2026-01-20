@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Masonry Layout</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #e5e5e5;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #333;
+    }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #999;
+      font-size: 14px;
+    }
+    .masonry {
+      column-count: 4;
+      column-gap: 24px;
+    }
+    .card {
+      break-inside: avoid;
+      background: #252525;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: all 0.3s;
+    }
+    .card:hover {
+      border-color: #667eea;
+      transform: translateY(-4px);
+    }
+    .card-large {
+      min-height: 200px;
+    }
+    .card-medium {
+      min-height: 150px;
+    }
+    .card-small {
+      min-height: 100px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      background: #333;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .card-title {
+      font-size: 14px;
+      color: #999;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .progress-bar {
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.5s;
+    }
+    .service-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .service-item h3 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .service-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    @media (max-width: 1200px) {
+      .masonry { column-count: 3; }
+    }
+    @media (max-width: 800px) {
+      .masonry { column-count: 2; }
+    }
+    @media (max-width: 500px) {
+      .masonry { column-count: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⚡ Pi Dashboard</h1>
+      <p>raspberrypi.local · <span style="color: #22c55e;">●</span> Connected</p>
+    </header>
+    <div class="masonry">
+      <div class="card card-large">
+        <div class="card-header">
+          <div class="card-icon">💻</div>
+        </div>
+        <div class="card-title">CPU Usage</div>
+        <div class="card-value">42.5%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 42.5%"></div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #999;">4 cores @ 2.4 GHz</div>
+      </div>
+      <div class="card card-medium">
+        <div class="card-header">
+          <div class="card-icon">🌡️</div>
+        </div>
+        <div class="card-title">Temperature</div>
+        <div class="card-value">52.3°C</div>
+        <div style="margin-top: 8px; font-size: 12px; color: #999;">CPU · Normal</div>
+      </div>
+      <div class="card card-large">
+        <div class="card-header">
+          <div class="card-icon">💾</div>
+        </div>
+        <div class="card-title">Memory</div>
+        <div class="card-value">68.2%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 68.2%"></div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #999;">5.4 GB / 7.9 GB</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📹</div>
+        </div>
+        <div class="card-title">Cameras</div>
+        <div class="card-value" style="font-size: 24px;">5 Active</div>
+      </div>
+      <div class="card card-large">
+        <div class="card-header">
+          <div class="card-icon">💿</div>
+        </div>
+        <div class="card-title">Disk Usage</div>
+        <div class="card-value">34.8%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 34.8%"></div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #999;">312 GB / 899 GB</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚡</div>
+        </div>
+        <div class="card-title">Services</div>
+        <div style="margin-top: 12px;">
+          <div class="service-item">
+            <h3>Jellyfin</h3>
+            <div class="service-status"></div>
+          </div>
+          <div class="service-item">
+            <h3>n8n</h3>
+            <div class="service-status"></div>
+          </div>
+          <div class="service-item">
+            <h3>Home Assistant</h3>
+            <div class="service-status" style="background: #666;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-medium">
+        <div class="card-header">
+          <div class="card-icon">🕐</div>
+        </div>
+        <div class="card-title">Uptime</div>
+        <div class="card-value" style="font-size: 28px;">12d 4h</div>
+      </div>
+      <div class="card card-small">
+        <div class="card-header">
+          <div class="card-icon">🌐</div>
+        </div>
+        <div class="card-title">Network</div>
+        <div style="margin-top: 8px; font-size: 12px; color: #999;">192.168.50.39</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

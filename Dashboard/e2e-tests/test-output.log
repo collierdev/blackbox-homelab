@@ -1,0 +1,412 @@
+
+> pi-dashboard-e2e-tests@1.0.0 test
+> playwright test
+
+
+Running 23 tests using 1 worker
+
+  ✓   1 [chromium] › calendar-todos.spec.ts:13:9 › Calendar & Tasks Feature › Navigation › should show Calendar & Tasks tab (4.0s)
+  ✓   2 [chromium] › calendar-todos.spec.ts:18:9 › Calendar & Tasks Feature › Navigation › should navigate to Calendar & Tasks view (4.3s)
+  ✘   3 [chromium] › calendar-todos.spec.ts:37:9 › Calendar & Tasks Feature › Calendar View › should show calendar header with view options (4.5s)
+  ✓   4 [chromium] › calendar-todos.spec.ts:46:9 › Calendar & Tasks Feature › Calendar View › should show Today button and navigation arrows (4.4s)
+  ✓   5 [chromium] › calendar-todos.spec.ts:52:9 › Calendar & Tasks Feature › Calendar View › should show New Event button (4.6s)
+  ✓   6 [chromium] › calendar-todos.spec.ts:56:9 › Calendar & Tasks Feature › Calendar View › should switch between calendar views (6.0s)
+  ✓   7 [chromium] › calendar-todos.spec.ts:70:9 › Calendar & Tasks Feature › Calendar View › should open event form when clicking New Event (5.0s)
+  ✓   8 [chromium] › calendar-todos.spec.ts:79:9 › Calendar & Tasks Feature › Calendar View › should create a new event (6.1s)
+  ✘   9 [chromium] › calendar-todos.spec.ts:95:9 › Calendar & Tasks Feature › Calendar View › should filter events by project (9.3s)
+  ✓  10 [chromium] › calendar-todos.spec.ts:115:9 › Calendar & Tasks Feature › Tasks View › should show tasks header (5.2s)
+  ✘  11 [chromium] › calendar-todos.spec.ts:119:9 › Calendar & Tasks Feature › Tasks View › should show New Task button (10.1s)
+  ✘  12 [chromium] › calendar-todos.spec.ts:123:9 › Calendar & Tasks Feature › Tasks View › should show project filter (10.2s)
+  ✘  13 [chromium] › calendar-todos.spec.ts:128:9 › Calendar & Tasks Feature › Tasks View › should show completed tasks toggle (9.6s)
+  ✘  14 [chromium] › calendar-todos.spec.ts:132:9 › Calendar & Tasks Feature › Tasks View › should open task form when clicking New Task (30.3s)
+  ✘  15 [chromium] › calendar-todos.spec.ts:141:9 › Calendar & Tasks Feature › Tasks View › should create a new task (30.3s)
+  ✘  16 [chromium] › calendar-todos.spec.ts:163:9 › Calendar & Tasks Feature › Tasks View › should complete a task (30.3s)
+  ✘  17 [chromium] › calendar-todos.spec.ts:180:9 › Calendar & Tasks Feature › Tasks View › should show/hide completed tasks (30.4s)
+  ✘  18 [chromium] › calendar-todos.spec.ts:190:9 › Calendar & Tasks Feature › Tasks View › should delete a task (30.3s)
+  ✓  19 [chromium] › calendar-todos.spec.ts:220:9 › Calendar & Tasks Feature › Projects › should group tasks by project (5.1s)
+  ✘  20 [chromium] › calendar-todos.spec.ts:229:9 › Calendar & Tasks Feature › Integration › should maintain state when switching between views (30.3s)
+  ✓  21 [chromium] › calendar-todos.spec.ts:254:9 › Calendar & Tasks Feature › Integration › should work with system dashboard tabs (6.4s)
+  ✘  22 [chromium] › calendar-todos.spec.ts:271:9 › Calendar & Tasks Feature › Error Handling › should handle empty form submission (30.4s)
+  ✓  23 [chromium] › calendar-todos.spec.ts:288:9 › Calendar & Tasks Feature › Error Handling › should allow canceling form (5.7s)
+
+
+  1) [chromium] › calendar-todos.spec.ts:37:9 › Calendar & Tasks Feature › Calendar View › should show calendar header with view options 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button:has-text("Day")')
+    Expected: visible
+    Error: strict mode violation: locator('button:has-text("Day")') resolved to 2 elements:
+        1) <button class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Today</button> aka getByRole('button', { name: 'Today' })
+        2) <button class="flex-1 px-4 py-1.5 text-sm font-medium rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Day</button> aka getByRole('button', { name: 'Day', exact: true })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('button:has-text("Day")')[22m
+
+
+      37 |     test('should show calendar header with view options', async ({ page }) => {
+      38 |       // Check for view switcher buttons
+    > 39 |       await expect(page.locator('button:has-text("Day")')).toBeVisible();
+         |                                                            ^
+      40 |       await expect(page.locator('button:has-text("Week")')).toBeVisible();
+      41 |       await expect(page.locator('button:has-text("Month")')).toBeVisible();
+      42 |       await expect(page.locator('button:has-text("2 Months")')).toBeVisible();
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:39:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-b9804-ar-header-with-view-options-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-b9804-ar-header-with-view-options-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-b9804-ar-header-with-view-options-chromium/error-context.md
+
+  2) [chromium] › calendar-todos.spec.ts:95:9 › Calendar & Tasks Feature › Calendar View › should filter events by project 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('select').first().locator('option:has-text("All Projects")')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('select').first().locator('option:has-text("All Projects")')[22m
+    [2m    9 × locator resolved to <option value="">All Projects</option>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+       99 |
+      100 |       // Should have "All Projects" option
+    > 101 |       await expect(filterDropdown.locator('option:has-text("All Projects")')).toBeVisible();
+          |                                                                               ^
+      102 |     });
+      103 |   });
+      104 |
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:101:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-09682-ld-filter-events-by-project-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-09682-ld-filter-events-by-project-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-09682-ld-filter-events-by-project-chromium/error-context.md
+
+  3) [chromium] › calendar-todos.spec.ts:119:9 › Calendar & Tasks Feature › Tasks View › should show New Task button 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button:has-text("New Task")')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      118 |
+      119 |     test('should show New Task button', async ({ page }) => {
+    > 120 |       await expect(page.locator('button:has-text("New Task")')).toBeVisible();
+          |                                                                 ^
+      121 |     });
+      122 |
+      123 |     test('should show project filter', async ({ page }) => {
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:120:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-e8074-should-show-New-Task-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-e8074-should-show-New-Task-button-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-e8074-should-show-New-Task-button-chromium/error-context.md
+
+  4) [chromium] › calendar-todos.spec.ts:123:9 › Calendar & Tasks Feature › Tasks View › should show project filter 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('text=All Projects')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=All Projects')[22m
+    [2m    9 × locator resolved to <option value="">All Projects</option>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      123 |     test('should show project filter', async ({ page }) => {
+      124 |       // Should see All Projects option
+    > 125 |       await expect(page.locator('text=All Projects')).toBeVisible();
+          |                                                       ^
+      126 |     });
+      127 |
+      128 |     test('should show completed tasks toggle', async ({ page }) => {
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-e4a5a--should-show-project-filter-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-e4a5a--should-show-project-filter-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-e4a5a--should-show-project-filter-chromium/error-context.md
+
+  5) [chromium] › calendar-todos.spec.ts:128:9 › Calendar & Tasks Feature › Tasks View › should show completed tasks toggle 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Show completed')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Show completed')[22m
+
+
+      127 |
+      128 |     test('should show completed tasks toggle', async ({ page }) => {
+    > 129 |       await expect(page.locator('text=Show completed')).toBeVisible();
+          |                                                         ^
+      130 |     });
+      131 |
+      132 |     test('should open task form when clicking New Task', async ({ page }) => {
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:129:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-1e7fb-show-completed-tasks-toggle-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-1e7fb-show-completed-tasks-toggle-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-1e7fb-show-completed-tasks-toggle-chromium/error-context.md
+
+  6) [chromium] › calendar-todos.spec.ts:132:9 › Calendar & Tasks Feature › Tasks View › should open task form when clicking New Task 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      131 |
+      132 |     test('should open task form when clicking New Task', async ({ page }) => {
+    > 133 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      134 |       await page.waitForTimeout(500);
+      135 |
+      136 |       // Should see task form
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:133:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-8be40-form-when-clicking-New-Task-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-8be40-form-when-clicking-New-Task-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-8be40-form-when-clicking-New-Task-chromium/error-context.md
+
+  7) [chromium] › calendar-todos.spec.ts:141:9 › Calendar & Tasks Feature › Tasks View › should create a new task 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      140 |
+      141 |     test('should create a new task', async ({ page }) => {
+    > 142 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      143 |       await page.waitForTimeout(500);
+      144 |
+      145 |       // Fill in task details
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:142:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-46574-ew-should-create-a-new-task-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-46574-ew-should-create-a-new-task-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-46574-ew-should-create-a-new-task-chromium/error-context.md
+
+  8) [chromium] › calendar-todos.spec.ts:163:9 › Calendar & Tasks Feature › Tasks View › should complete a task 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      163 |     test('should complete a task', async ({ page }) => {
+      164 |       // First create a task
+    > 165 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      166 |       await page.waitForTimeout(500);
+      167 |       await page.fill('input[placeholder="Task title"]', 'Task to Complete');
+      168 |       await page.click('button:has-text("Create Task")');
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:165:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-acde3-View-should-complete-a-task-chromium/error-context.md
+
+  9) [chromium] › calendar-todos.spec.ts:180:9 › Calendar & Tasks Feature › Tasks View › should show/hide completed tasks 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.check: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="checkbox"]:near(:text("Show completed"))')[22m
+
+
+      181 |       // Toggle "Show completed"
+      182 |       const checkbox = page.locator('input[type="checkbox"]:near(:text("Show completed"))');
+    > 183 |       await checkbox.check();
+          |                      ^
+      184 |       await page.waitForTimeout(500);
+      185 |
+      186 |       await checkbox.uncheck();
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:183:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-5ed7b-d-show-hide-completed-tasks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-5ed7b-d-show-hide-completed-tasks-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-5ed7b-d-show-hide-completed-tasks-chromium/error-context.md
+
+  10) [chromium] › calendar-todos.spec.ts:190:9 › Calendar & Tasks Feature › Tasks View › should delete a task 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      190 |     test('should delete a task', async ({ page }) => {
+      191 |       // First create a task
+    > 192 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      193 |       await page.waitForTimeout(500);
+      194 |       await page.fill('input[placeholder="Task title"]', 'Task to Delete');
+      195 |       await page.click('button:has-text("Create Task")');
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:192:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-c5d54-s-View-should-delete-a-task-chromium/error-context.md
+
+  11) [chromium] › calendar-todos.spec.ts:229:9 › Calendar & Tasks Feature › Integration › should maintain state when switching between views 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      234 |       await page.click('button:has-text("Tasks")');
+      235 |       await page.waitForTimeout(500);
+    > 236 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      237 |       await page.waitForTimeout(500);
+      238 |       await page.fill('input[placeholder="Task title"]', 'Persistent Task');
+      239 |       await page.click('button:has-text("Create Task")');
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:236:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-d61bf-hen-switching-between-views-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-d61bf-hen-switching-between-views-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-d61bf-hen-switching-between-views-chromium/error-context.md
+
+  12) [chromium] › calendar-todos.spec.ts:271:9 › Calendar & Tasks Feature › Error Handling › should handle empty form submission 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("New Task")')[22m
+
+
+      275 |       await page.waitForTimeout(500);
+      276 |
+    > 277 |       await page.click('button:has-text("New Task")');
+          |                  ^
+      278 |       await page.waitForTimeout(500);
+      279 |
+      280 |       // Try to submit without filling required fields
+        at /home/jwcollie/Dashboard/e2e-tests/calendar-todos.spec.ts:277:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-0f56c-andle-empty-form-submission-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/calendar-todos-Calendar-Ta-0f56c-andle-empty-form-submission-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-todos-Calendar-Ta-0f56c-andle-empty-form-submission-chromium/error-context.md
+
+  12 failed
+    [chromium] › calendar-todos.spec.ts:37:9 › Calendar & Tasks Feature › Calendar View › should show calendar header with view options 
+    [chromium] › calendar-todos.spec.ts:95:9 › Calendar & Tasks Feature › Calendar View › should filter events by project 
+    [chromium] › calendar-todos.spec.ts:119:9 › Calendar & Tasks Feature › Tasks View › should show New Task button 
+    [chromium] › calendar-todos.spec.ts:123:9 › Calendar & Tasks Feature › Tasks View › should show project filter 
+    [chromium] › calendar-todos.spec.ts:128:9 › Calendar & Tasks Feature › Tasks View › should show completed tasks toggle 
+    [chromium] › calendar-todos.spec.ts:132:9 › Calendar & Tasks Feature › Tasks View › should open task form when clicking New Task 
+    [chromium] › calendar-todos.spec.ts:141:9 › Calendar & Tasks Feature › Tasks View › should create a new task 
+    [chromium] › calendar-todos.spec.ts:163:9 › Calendar & Tasks Feature › Tasks View › should complete a task 
+    [chromium] › calendar-todos.spec.ts:180:9 › Calendar & Tasks Feature › Tasks View › should show/hide completed tasks 
+    [chromium] › calendar-todos.spec.ts:190:9 › Calendar & Tasks Feature › Tasks View › should delete a task 
+    [chromium] › calendar-todos.spec.ts:229:9 › Calendar & Tasks Feature › Integration › should maintain state when switching between views 
+    [chromium] › calendar-todos.spec.ts:271:9 › Calendar & Tasks Feature › Error Handling › should handle empty form submission 
+  11 passed (5.5m)

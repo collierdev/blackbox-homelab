@@ -1,0 +1,21 @@
+{
+  "name": "pi-dashboard",
+  "version": "1.0.0",
+  "description": "Raspberry Pi Dashboard",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "docker:build": "docker build -t pi-dashboard .",
+    "docker:run": "docker run -d --name pi-dashboard -p 80:80 -v /var/run/docker.sock:/var/run/docker.sock:ro --network host pi-dashboard"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/dockerode": "^3.3.47",
+    "concurrently": "^9.1.2"
+  }
+}

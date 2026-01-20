@@ -1,0 +1,250 @@
+# Cursor Rules - Pi Dashboard (Full-Stack Development)
+
+## Context
+When working in the `Dashboard/` directory, focus on **full-stack web development** rather than systems engineering. This is a React + Express TypeScript application.
+
+## Project Overview
+
+**Pi Dashboard** - Real-time web dashboard for monitoring and managing a Raspberry Pi 5 server.
+
+- **Access URL**: http://192.168.50.39
+- **Container**: `pi-dashboard` (Docker)
+- **Port**: 80
+- **Development**: Client (5173) + Server (3001)
+
+## Architecture
+
+```
+Dashboard/
+├── client/          # React frontend (Vite + TypeScript + Tailwind)
+├── server/          # Express.js backend (TypeScript)
+├── Dockerfile       # Multi-stage build
+├── docker-compose.yml
+└── package.json     # Root scripts for dev/build
+```
+
+## Frontend Stack (`client/`)
+
+### Tech Stack
+- **Framework**: React 19.2.0 + TypeScript 5.9
+- **Build Tool**: Vite 7.2.4
+- **Styling**: Tailwind CSS 4.1.18 with dark/light mode
+- **Icons**: Lucide React 0.562.0
+- **State Management**: React Context API
+- **Real-time**: Socket.io-client 4.8.3
+- **Data Fetching**: TanStack React Query 5.90.16
+- **Markdown**: react-markdown 10.1.0
+
+### Key Components
+- `src/components/Header.tsx` - Top bar with hostname, connection status, theme toggle
+- `src/components/SystemStats.tsx` - CPU, RAM, disk, temp, network displays + collapsible tables
+- `src/components/Services.tsx` - Service cards with start/stop/restart
+- `src/components/ServiceCard.tsx` - Individual service control card
+- `src/components/ChatBot.tsx` - Floating AI chat (Ollama/Claude)
+- `src/components/HomeAssistant.tsx` - Smart home device control panel
+- `src/components/homeassistant/*.tsx` - Device-specific cards (Light, Switch, Climate, MediaPlayer, Camera)
+- `src/components/go2rtc/*.tsx` - go2rtc integration components
+- `src/context/ThemeContext.tsx` - Dark/light mode state management
+- `src/hooks/useSocket.ts` - WebSocket connection hook for real-time stats + Home Assistant API
+
+### UI Features
+- **Tab Navigation** - System (dashboard) and Smart Home tabs
+- **Network Services Table** - Collapsible table showing all services with IPs, ports, and clickable URLs
+- **Memory Usage Table** - Collapsible, sortable table showing top processes by memory usage
+- **Home Assistant Integration** - Device control cards for lights, switches, climate, media players, and cameras
+- **Camera Viewing** - Live MJPEG streams and snapshots from Home Assistant cameras with fullscreen support
+
+### Development Commands
+```bash
+cd client
+npm run dev        # Start Vite dev server (port 5173)
+npm run build      # Build for production
+npm run lint       # Run ESLint
+npm run preview    # Preview production build
+```
+
+## Backend Stack (`server/`)
+
+### Tech Stack
+- **Framework**: Express 5.2.1 + TypeScript 5.9
+- **Real-time**: Socket.io 4.8.3 (2-second intervals for system stats, 5-second for Home Assistant)
+- **System Info**: systeminformation 5.30.3
+- **Docker**: dockerode 4.0.9 for container management
+- **CORS**: cors 2.8.5
+- **Dev Tools**: nodemon, ts-node
+
+### Key Files
+- `src/index.ts` - Main server, WebSocket setup, static file serving
+- `src/routes/system.ts` - GET /api/system/stats, /api/system/cpu-history
+- `src/routes/services.ts` - GET/POST /api/services for Docker/systemd control
+- `src/routes/chat.ts` - POST /api/chat/ollama, /api/chat/claude
+- `src/routes/homeassistant.ts` - Home Assistant REST endpoints
+- `src/routes/go2rtc.ts` - go2rtc integration endpoints
+- `src/utils/systemInfo.ts` - CPU, RAM, temp, disk, network data collection
+- `src/utils/docker.ts` - Docker container and systemd service management
+- `src/utils/homeassistant.ts` - Home Assistant API client
+- `src/config/homeassistant.ts` - HA URL and token configuration
+- `src/config/go2rtc.ts` - go2rtc URL configuration
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/system/stats` | GET | Current system stats |
+| `/api/system/cpu-history` | GET | Per-core CPU usage |
+| `/api/services` | GET | List all services |
+| `/api/services/:id/:action` | POST | Control service (start/stop/restart) |
+| `/api/chat/models` | GET | List Ollama models |
+| `/api/chat/ollama` | POST | Chat with local Ollama |
+| `/api/chat/claude` | POST | Chat with Claude API |
+| `/api/homeassistant/status` | GET | HA connection status |
+| `/api/homeassistant/devices` | GET | List grouped HA devices |
+| `/api/homeassistant/entities/:id/toggle` | POST | Toggle entity on/off |
+| `/api/homeassistant/lights/:id/brightness` | POST | Set light brightness |
+| `/api/homeassistant/climate/:id/temperature` | POST | Set thermostat temp |
+| `/api/homeassistant/media_player/:id/:action` | POST | Media control (play_pause, next, etc.) |
+| `/api/homeassistant/camera` | GET | List all cameras |
+| `/api/homeassistant/camera/:id/snapshot` | GET | Proxy camera snapshot image |
+| `/api/homeassistant/camera/:id/stream` | GET | Proxy MJPEG live stream |
+| `/api/go2rtc/streams` | GET | List go2rtc streams |
+| `/api/go2rtc/stream/:id` | GET | Get stream info |
+| WebSocket `/socket.io` | - | Real-time stats + HA device updates |
+
+### Development Commands
+```bash
+cd server
+npm run dev        # Start with nodemon (port 3001)
+npm run build      # Compile TypeScript
+npm start          # Run production build
+```
+
+## Root Scripts
+
+```bash
+cd Dashboard
+npm run dev              # Run both client (5173) and server (3001) concurrently
+npm run build            # Build both client and server
+npm start                # Start production server
+npm run docker:build     # Build Docker image
+npm run docker:run       # Run Docker container
+```
+
+## Code Style & Best Practices
+
+### TypeScript
+- Use strict TypeScript configuration
+- Define proper interfaces/types for all data structures
+- Keep types in sync between client and server
+- Use `client/src/types/index.ts` for shared types
+
+### React Components
+- Use functional components with hooks
+- Follow component composition patterns
+- Use TypeScript for all props and state
+- Implement proper error boundaries
+- Use React Query for data fetching when appropriate
+- Leverage Socket.io for real-time updates
+
+### Styling
+- Use Tailwind CSS utility classes
+- Support both dark and light themes via CSS variables
+- Edit `client/src/index.css` for theme colors
+- Use Lucide React icons consistently
+
+### API Design
+- RESTful endpoints with proper HTTP methods
+- Consistent error handling and status codes
+- Type-safe request/response interfaces
+- WebSocket events for real-time data
+
+### Real-time Updates
+- System stats: 2-second intervals (Socket.io)
+- Home Assistant: 5-second intervals (Socket.io)
+- Camera snapshots: 30-second auto-refresh
+- Use `useSocket` hook for WebSocket connections
+
+### Adding New Features
+
+**Adding a new stat/metric:**
+1. Add data collection in `server/src/utils/systemInfo.ts`
+2. Update `SystemStats` interface in both:
+   - `server/src/utils/systemInfo.ts`
+   - `client/src/types/index.ts`
+3. Create/update component in `client/src/components/`
+
+**Adding a new service:**
+1. Edit `server/src/utils/docker.ts`:
+   ```typescript
+   const SERVICES_CONFIG = {
+     myservice: { type: 'docker', url: 'http://...', port: 8080 },
+   };
+   ```
+2. For systemd services, add to `systemdServices` array
+
+**Adding a new API endpoint:**
+1. Create route file in `server/src/routes/`
+2. Register route in `server/src/index.ts`
+3. Add TypeScript types for request/response
+4. Update API documentation in `Dashboard/CLAUDE.md`
+
+**Adding a new React component:**
+1. Create component in `client/src/components/`
+2. Use TypeScript for props
+3. Support dark/light theme
+4. Use Tailwind CSS for styling
+5. Add to appropriate parent component
+
+## Testing & Debugging
+
+### View Logs
+```bash
+# Docker container logs
+sudo docker logs pi-dashboard
+sudo docker logs -f pi-dashboard  # Follow
+
+# Development
+# Client: Check browser console
+# Server: Check terminal output
+```
+
+### Common Issues
+- **CORS errors**: Check `server/src/index.ts` CORS configuration
+- **Socket.io connection**: Verify server is running and WebSocket path is correct
+- **Type errors**: Ensure types are in sync between client and server
+- **Build errors**: Run `npm run build` in both client and server directories
+
+## Docker Deployment
+
+**Important flags:**
+- `--pid=host` - Share host's PID namespace (required for host process access)
+- `--privileged` - Required for system access
+- `-v /var/run/docker.sock:/var/run/docker.sock:ro` - Access Docker API
+
+**Rebuild and redeploy:**
+```bash
+cd ~/Dashboard
+sudo docker stop pi-dashboard && sudo docker rm pi-dashboard
+docker build -t pi-dashboard .
+sudo docker run -d --name pi-dashboard --restart=always \
+  -p 80:80 \
+  --pid=host \
+  --privileged \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  pi-dashboard
+```
+
+## Focus Areas
+
+When working in this directory, prioritize:
+1. **Code Quality** - Clean, maintainable, well-typed code
+2. **Component Architecture** - Reusable, composable React components
+3. **API Design** - RESTful, type-safe, well-documented endpoints
+4. **User Experience** - Responsive UI, real-time updates, error handling
+5. **Performance** - Efficient rendering, optimized WebSocket usage
+6. **Type Safety** - Full TypeScript coverage, shared types between client/server
+
+## Documentation
+
+- See `Dashboard/CLAUDE.md` for detailed architecture and API documentation
+- See root `CLAUDE.md` for system-level context and deployment info

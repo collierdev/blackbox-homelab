@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Modern Design Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-info h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .header-info p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 32px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tab {
+      padding: 16px 24px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab:hover {
+      color: #475569;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    /* Main Content */
+    .content {
+      padding: 32px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .stat-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .progress-bar {
+      margin-top: 16px;
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* Services Grid */
+    .services-section {
+      margin-top: 48px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 24px;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .service-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      border: 2px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+
+    .service-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.1);
+    }
+
+    .service-card.running {
+      border-color: #4ade80;
+    }
+
+    .service-card.stopped {
+      border-color: #e2e8f0;
+      opacity: 0.7;
+    }
+
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .service-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .service-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .service-info p {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .status-badge {
+      margin-left: auto;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-badge.running {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-badge.stopped {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .service-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    /* Temperature Card Special */
+    .stat-card.temperature {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+
+    .stat-card.temperature .stat-value {
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">⚡</div>
+        <div class="header-info">
+          <h1>Pi Dashboard</h1>
+          <p>raspberrypi.local</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Connected</span>
+        </div>
+        <button class="btn" style="background: rgba(255,255,255,0.2); color: white;">🌙</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab active">
+        <span>📊</span>
+        <span>System</span>
+      </button>
+      <button class="tab">
+        <span>🏠</span>
+        <span>Smart Home</span>
+      </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">
+              <div class="stat-icon">💻</div>
+              <div>
+                <div class="stat-label">CPU Usage</div>
+                <div class="stat-value">42.5%</div>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 42.5%"></div>
+          </div>
+          <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+            4 cores · 2.4 GHz
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">
+              <div class="stat-icon">💾</div>
+              <div>
+                <div class="stat-label">Memory</div>
+                <div class="stat-value">68.2%</div>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 68.2%"></div>
+          </div>
+          <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+            5.4 GB / 7.9 GB
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">
+              <div class="stat-icon">💿</div>
+              <div>
+                <div class="stat-label">Disk Usage</div>
+                <div class="stat-value">34.8%</div>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 34.8%"></div>
+          </div>
+          <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+            312 GB / 899 GB
+          </div>
+        </div>
+
+        <div class="stat-card temperature">
+          <div class="stat-header">
+            <div class="stat-title">
+              <div class="stat-icon">🌡️</div>
+              <div>
+                <div class="stat-label">Temperature</div>
+                <div class="stat-value">52.3°C</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; font-size: 12px; color: #92400e;">
+            CPU Temperature · Normal
+          </div>
+        </div>
+      </div>
+
+      <!-- Services Section -->
+      <div class="services-section">
+        <h2 class="section-title">Services</h2>
+        <div class="services-grid">
+          <div class="service-card running">
+            <div class="service-header">
+              <div class="service-icon">🎬</div>
+              <div class="service-info">
+                <h3>Jellyfin</h3>
+                <p>Docker</p>
+              </div>
+              <span class="status-badge running">Running</span>
+            </div>
+            <div class="service-actions">
+              <button class="btn btn-danger">Stop</button>
+              <button class="btn btn-primary">Restart</button>
+              <button class="btn btn-primary" style="margin-left: auto;">Open</button>
+            </div>
+          </div>
+
+          <div class="service-card running">
+            <div class="service-header">
+              <div class="service-icon">🤖</div>
+              <div class="service-info">
+                <h3>n8n</h3>
+                <p>Docker</p>
+              </div>
+              <span class="status-badge running">Running</span>
+            </div>
+            <div class="service-actions">
+              <button class="btn btn-danger">Stop</button>
+              <button class="btn btn-primary">Restart</button>
+              <button class="btn btn-primary" style="margin-left: auto;">Open</button>
+            </div>
+          </div>
+
+          <div class="service-card stopped">
+            <div class="service-header">
+              <div class="service-icon">🏠</div>
+              <div class="service-info">
+                <h3>Home Assistant</h3>
+                <p>Docker</p>
+              </div>
+              <span class="status-badge stopped">Stopped</span>
+            </div>
+            <div class="service-actions">
+              <button class="btn btn-success">Start</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

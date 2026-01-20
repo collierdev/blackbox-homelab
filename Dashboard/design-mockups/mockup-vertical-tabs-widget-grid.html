@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Vertical Tabs + Widget Grid</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background: white;
+      border-right: 1px solid #e2e8f0;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .logo {
+      padding: 0 24px 32px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+    .logo h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .logo p {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .tabs {
+      padding: 0 12px;
+    }
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: #64748b;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      transition: all 0.2s;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .tab:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .tab.active {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .sidebar-footer {
+      padding: 24px;
+      margin-top: auto;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .sidebar-footer .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+    }
+    .main-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .widget {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .widget:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .widget-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a202c;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .widget-icon {
+      font-size: 20px;
+    }
+    .widget-content {
+      font-size: 32px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 12px;
+    }
+    .widget-footer {
+      font-size: 13px;
+      color: #718096;
+    }
+    .progress-widget {
+      margin-top: 16px;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #f0f2f5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.5s;
+    }
+    .service-widget {
+      min-height: 200px;
+    }
+    .service-list {
+      list-style: none;
+    }
+    .service-list-item {
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .service-list-item:last-child {
+      margin-bottom: 0;
+    }
+    .service-name {
+      font-weight: 600;
+      color: #2d3748;
+    }
+    .status-dot-widget {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    .status-dot-widget.stopped {
+      background: #94a3b8;
+    }
+    .widget-action {
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    .widget-action:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>⚡ Pi Dashboard</h1>
+      <p>raspberrypi.local</p>
+    </div>
+    <nav class="tabs">
+      <a href="#" class="tab active">
+        <span>📊</span>
+        <span>Overview</span>
+      </a>
+      <a href="#" class="tab">
+        <span>⚙️</span>
+        <span>Services</span>
+      </a>
+      <a href="#" class="tab">
+        <span>🏠</span>
+        <span>Smart Home</span>
+      </a>
+      <a href="#" class="tab">
+        <span>📹</span>
+        <span>Cameras</span>
+      </a>
+      <a href="#" class="tab">
+        <span>📈</span>
+        <span>Analytics</span>
+      </a>
+      <a href="#" class="tab">
+        <span>⚙️</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>Connected</span>
+      </div>
+    </div>
+  </aside>
+  <main class="main-content">
+    <div class="widget-grid">
+      <div class="widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">💻</span>
+            <span>CPU Usage</span>
+          </div>
+        </div>
+        <div class="widget-content">42.5%</div>
+        <div class="progress-widget">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 42.5%"></div>
+          </div>
+        </div>
+        <div class="widget-footer">4 cores @ 2.4 GHz</div>
+      </div>
+      <div class="widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">💾</span>
+            <span>Memory</span>
+          </div>
+        </div>
+        <div class="widget-content">68.2%</div>
+        <div class="progress-widget">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 68.2%"></div>
+          </div>
+        </div>
+        <div class="widget-footer">5.4 GB / 7.9 GB</div>
+      </div>
+      <div class="widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">💿</span>
+            <span>Disk Usage</span>
+          </div>
+        </div>
+        <div class="widget-content">34.8%</div>
+        <div class="progress-widget">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 34.8%"></div>
+          </div>
+        </div>
+        <div class="widget-footer">312 GB / 899 GB</div>
+      </div>
+      <div class="widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">🌡️</span>
+            <span>Temperature</span>
+          </div>
+        </div>
+        <div class="widget-content">52.3°C</div>
+        <div class="widget-footer">CPU Temperature · Normal</div>
+      </div>
+      <div class="widget service-widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">⚙️</span>
+            <span>Services</span>
+          </div>
+        </div>
+        <ul class="service-list">
+          <li class="service-list-item">
+            <span class="service-name">Jellyfin</span>
+            <span class="status-dot-widget"></span>
+          </li>
+          <li class="service-list-item">
+            <span class="service-name">n8n</span>
+            <span class="status-dot-widget"></span>
+          </li>
+          <li class="service-list-item">
+            <span class="service-name">Home Assistant</span>
+            <span class="status-dot-widget stopped"></span>
+          </li>
+        </ul>
+        <button class="widget-action">Manage Services</button>
+      </div>
+      <div class="widget">
+        <div class="widget-header">
+          <div class="widget-title">
+            <span class="widget-icon">🕐</span>
+            <span>Uptime</span>
+          </div>
+        </div>
+        <div class="widget-content" style="font-size: 24px;">12d 4h</div>
+        <div class="widget-footer">System uptime</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

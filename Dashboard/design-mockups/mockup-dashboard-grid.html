@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Grid Layout</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0e27;
+      color: #e2e8f0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: auto auto 1fr;
+      gap: 20px;
+    }
+    .header {
+      grid-column: 1 / -1;
+      background: #1a1f3a;
+      border: 1px solid #2d3250;
+      border-radius: 12px;
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .stat-large {
+      grid-column: span 3;
+      background: #1a1f3a;
+      border: 1px solid #2d3250;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .stat-medium {
+      grid-column: span 2;
+      background: #1a1f3a;
+      border: 1px solid #2d3250;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-small {
+      grid-column: span 1;
+      background: #1a1f3a;
+      border: 1px solid #2d3250;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .service-grid {
+      grid-column: span 4;
+      background: #1a1f3a;
+      border: 1px solid #2d3250;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .stat-value {
+      font-size: 48px;
+      font-weight: 700;
+      margin: 12px 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #0a0e27;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.5s;
+    }
+    .service-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: #0a0e27;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .service-item h3 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .service-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⚡ Pi Dashboard</h1>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span style="font-size: 12px; color: #94a3b8;">raspberrypi.local</span>
+        <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></span>
+        <span style="font-size: 12px;">Connected</span>
+      </div>
+    </header>
+    <div class="stat-large">
+      <div class="stat-label">CPU Usage</div>
+      <div class="stat-value">42.5%</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 42.5%"></div>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; color: #94a3b8;">4 cores · 2.4 GHz</div>
+    </div>
+    <div class="stat-large">
+      <div class="stat-label">Memory</div>
+      <div class="stat-value">68.2%</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 68.2%"></div>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; color: #94a3b8;">5.4 GB / 7.9 GB</div>
+    </div>
+    <div class="stat-large">
+      <div class="stat-label">Disk Usage</div>
+      <div class="stat-value">34.8%</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 34.8%"></div>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; color: #94a3b8;">312 GB / 899 GB</div>
+    </div>
+    <div class="stat-medium">
+      <div class="stat-label">Temperature</div>
+      <div style="font-size: 36px; font-weight: 700; margin: 12px 0;">52.3°C</div>
+      <div style="font-size: 12px; color: #94a3b8;">CPU · Normal</div>
+    </div>
+    <div class="stat-medium">
+      <div class="stat-label">Uptime</div>
+      <div style="font-size: 24px; font-weight: 700; margin: 12px 0;">12d 4h</div>
+      <div style="font-size: 12px; color: #94a3b8;">System uptime</div>
+    </div>
+    <div class="service-grid">
+      <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Services</h3>
+      <div class="service-item">
+        <div>
+          <h3>Jellyfin</h3>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Docker</div>
+        </div>
+        <div class="service-status"></div>
+      </div>
+      <div class="service-item">
+        <div>
+          <h3>n8n</h3>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Docker</div>
+        </div>
+        <div class="service-status"></div>
+      </div>
+      <div class="service-item">
+        <div>
+          <h3>Home Assistant</h3>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Docker</div>
+        </div>
+        <div class="service-status" style="background: #94a3b8;"></div>
+      </div>
+    </div>
+    <div class="service-grid">
+      <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Network</h3>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 2;">
+        <div>eth0: 192.168.50.39</div>
+        <div>wlan0: Not connected</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
