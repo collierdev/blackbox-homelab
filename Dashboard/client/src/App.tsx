@@ -203,7 +203,10 @@ function Dashboard() {
         </div>
       </nav>
 
-      <main className={`${activeTab === 'calendar' ? 'h-[calc(100vh-120px)]' : 'container mx-auto px-6 py-6 space-y-8'}`}>
+      <main className={activeTab === 'calendar'
+        ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)] flex flex-col'
+        : 'container mx-auto px-6 py-6 space-y-8'
+      }>
         {activeTab === 'dashboard' ? (
           <DndContext
             sensors={sensors}
@@ -232,7 +235,9 @@ function Dashboard() {
             />
           </section>
         ) : (
-          <CalendarTodoView />
+          <div className="h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
+            <CalendarTodoView />
+          </div>
         )}
       </main>
 

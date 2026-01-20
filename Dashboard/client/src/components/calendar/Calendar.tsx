@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CalendarView } from '../../types';
 import CalendarHeader from './CalendarHeader';
+import CalendarSettings from './CalendarSettings';
 import MonthView from './MonthView';
 import WeekView from './WeekView';
 import DayView from './DayView';
@@ -11,13 +12,24 @@ import EventForm from './EventForm';
 import { useSocket } from '../../hooks/useSocket';
 
 export default function Calendar() {
-  const { events, projects, createEvent, updateEvent, deleteEvent, completeEvent } = useSocket();
+  const {
+    events,
+    projects,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    completeEvent,
+    createProject,
+    updateProject,
+    deleteProject
+  } = useSocket();
   const [currentView, setCurrentView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) : null;
   const editingEvent = editingEventId ? events.find(e => e.id === editingEventId) : null;
@@ -130,6 +142,33 @@ export default function Calendar() {
     }
   };
 
+  const handleCreateProject = async (name: string, color: string) => {
+    try {
+      await createProject(name, color);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      throw error;
+    }
+  };
+
+  const handleUpdateProject = async (id: string, updates: { name?: string; color?: string }) => {
+    try {
+      await updateProject(id, updates);
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteProject(id, false); // Don't cascade delete events
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      throw error;
+    }
+  };
+
   const renderView = () => {
     const commonProps = {
       events: filteredEvents,
@@ -156,7 +195,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-card">
       <CalendarHeader
         currentView={currentView}
         currentDate={currentDate}
@@ -165,6 +204,7 @@ export default function Calendar() {
         onNext={handleNext}
         onToday={handleToday}
         onNewEvent={() => handleNewEvent()}
+        onSettings={() => setIsSettingsOpen(true)}
         projects={projects}
         selectedProjectFilter={selectedProjectFilter}
         onProjectFilterChange={setSelectedProjectFilter}
@@ -195,6 +235,16 @@ export default function Calendar() {
           projects={projects}
           onClose={handleCloseEventForm}
           onSave={handleSaveEvent}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <CalendarSettings
+          projects={projects}
+          onClose={() => setIsSettingsOpen(false)}
+          onCreateProject={handleCreateProject}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
         />
       )}
     </div>

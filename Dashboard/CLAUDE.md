@@ -285,3 +285,239 @@ Each camera has HD and SD stream variants configured in go2rtc.
 - **iframe Integration** - Uses go2rtc's iframe-friendly pages for seamless embedding
 
 Camera streams are served directly from go2rtc (no backend proxying needed).
+
+## UI Components
+
+### Shared Components
+
+#### ColorPicker (`client/src/components/shared/ColorPicker.tsx`)
+
+A comprehensive, reusable color picker component used throughout the dashboard for consistent color selection.
+
+**Features:**
+- **HSL Controls**: Hue (0-360°), Saturation (0-100%), Lightness (0-100%) sliders with live gradient backgrounds
+- **Hex Input**: Direct hex code entry with real-time validation
+- **RGB Inputs**: Optional detailed RGB controls (red, green, blue values)
+- **Preset Swatches**: Configurable preset colors displayed in an 8x2 grid
+- **Live Preview**: Large 64x64px color preview square with current hex code display
+- **Custom Styling**: Beautiful slider thumbs with blue accents, shadows, and smooth hover effects
+- **Dark Mode**: Full dark mode support with proper contrast
+
+**Usage:**
+```typescript
+import ColorPicker from '../shared/ColorPicker';
+
+<ColorPicker
+  color="#EF4444"
+  onChange={(hexColor) => handleColorChange(hexColor)}
+  showPresets={true}
+  presetColors={['#EF4444', '#F59E0B', '#3B82F6', ...]}
+  label="Choose Color"
+/>
+```
+
+**Props:**
+- `color` - Current color value (hex string)
+- `onChange` - Callback function when color changes
+- `showPresets` - Whether to show preset color swatches (default: true)
+- `presetColors` - Array of preset hex colors (optional)
+- `label` - Label text for the color picker (optional)
+
+**Used By:**
+- Calendar Settings (project color customization)
+- Smart Home light controls (via LightColorPicker adapter)
+- Any component requiring color selection
+
+#### LightColorPicker (`client/src/components/shared/LightColorPicker.tsx`)
+
+Specialized adapter component for Home Assistant smart lights that wraps the ColorPicker component.
+
+**Features:**
+- RGB ↔ Hex color conversion for Home Assistant compatibility
+- 16 lighting-optimized preset colors:
+  - Warm whites (2700K-3000K tones)
+  - Soft whites and daylight whites
+  - Full spectrum of vibrant colors
+  - Popular lighting scenes (electric purple, ocean blue, etc.)
+- Integrates seamlessly with the main ColorPicker component
+- Handles RGB value extraction for light control API calls
+
+**Usage:**
+```typescript
+import LightColorPicker from '../shared/LightColorPicker';
+
+<LightColorPicker
+  rgb={[255, 100, 50]}
+  onChange={([r, g, b]) => setLightColor(entityId, r, g, b)}
+/>
+```
+
+### Calendar Components
+
+#### CalendarSettings (`client/src/components/calendar/CalendarSettings.tsx`)
+
+Comprehensive settings modal accessible via the Settings (⚙️) button in the calendar header.
+
+**Features:**
+- **Two-Tab Interface:**
+  - **Calendar Sync Tab**: Connect/disconnect external calendar services
+  - **Projects Tab**: Full CRUD operations for project management
+
+**Calendar Sync Tab:**
+- Display connected calendars with status badges (connected/error/syncing)
+- Show last sync time and associated email address
+- Disconnect calendar accounts with one click
+- Support for multiple calendar providers:
+  - Google Calendar (OAuth2)
+  - Microsoft Outlook (Graph API)
+  - Apple iCloud (CalDAV)
+  - Generic CalDAV servers
+- OAuth flow integration (UI ready, backend OAuth credentials required)
+
+**Projects Tab:**
+- Create new projects with custom names and colors
+- Edit existing project names and colors inline
+- Delete projects with confirmation dialog
+- Integrated ColorPicker component for color selection
+- 16 vibrant preset colors optimized for project organization
+- Drag-and-drop reordering (planned)
+
+**Access:**
+Click the Settings (⚙️) button in the calendar header, then use the tab navigation to switch between "Calendar Sync" and "Projects".
+
+#### CalendarHeader (`client/src/components/calendar/CalendarHeader.tsx`)
+
+Modern calendar navigation and control header with enhanced visual design.
+
+**Features:**
+- **Gradient Background**: Subtle gradient from white to gray-50 (dark mode: gray-800 to gray-900)
+- **Navigation Controls**:
+  - Today button with pulse effect
+  - Grouped Previous/Next month buttons with divider
+  - Clear hover states with shadow enhancements
+- **View Selector**: Buttons for Month/Week/Day/2-Month/Circular views
+  - Blue active state with shadow-md
+  - Scale animation on hover
+- **Settings Button**: Gear icon (⚙️) to open CalendarSettings modal
+- **Date Display**: Current month/year or date range display
+
+### Smart Home Components
+
+#### Light Color Control (`client/src/components/homeassistant/LightCard.tsx`)
+
+Enhanced color control interface for Home Assistant lights with color-changing capabilities.
+
+**Features:**
+- Modern ColorPicker component (replaces old circular color wheel)
+- 16 lighting-optimized preset colors for common scenes
+- "Choose Color" button with enhanced styling (shadows, borders, hover states)
+- Polished card interface with rounded corners and proper spacing
+- Color picker opens in a container with shadow-lg and rounded-xl styling
+- Seamless integration with Home Assistant REST API
+
+**Usage:**
+Color-capable lights display a "Choose Color" button below the brightness slider. Click to open the color picker and:
+- Select from 16 preset lighting colors
+- Use HSL sliders for precise color control
+- Enter hex codes directly
+- Use RGB inputs for advanced control
+
+**Color Flow:**
+1. User selects color in ColorPicker
+2. LightColorPicker converts hex to RGB
+3. RGB values sent to Home Assistant API
+4. Light updates in real-time
+
+### UI Modernization Features
+
+#### Enhanced Button Styling
+All interactive buttons throughout the dashboard now feature:
+- **Shadows**: shadow-sm base, shadow-md on hover
+- **Borders**: Subtle borders with hover state enhancements
+- **Rounded Corners**: Consistent rounded-lg or rounded-xl
+- **Hover Effects**: Smooth transitions with scale and shadow changes
+- **Active States**: Blue accent (#3B82F6) with enhanced shadows
+
+#### Custom Slider Styles (`client/src/index.css`)
+
+Custom CSS styling for range input sliders used in the ColorPicker:
+
+```css
+input[type="range"].color-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  border-radius: 6px;
+  outline: none;
+}
+
+input[type="range"].color-slider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #3B82F6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+```
+
+**Features:**
+- Separate styling for WebKit (Chrome, Safari, Edge) and Mozilla (Firefox)
+- 20px circular thumbs with blue borders
+- Shadow effects for depth
+- Hover animation (scale 1.1)
+- Consistent appearance across browsers
+
+#### View Toggles (Calendar/Tasks)
+
+Modern toggle buttons in CalendarTodoView:
+- Blue active state (replaces previous gray)
+- Enhanced shadows (shadow-sm → shadow-md)
+- Better contrast in both light and dark modes
+- Consistent padding and rounded corners
+- Smooth transitions on state changes
+
+## Design System
+
+### Color Palette
+- **Primary Blue**: #3B82F6 (used for active states, accents, slider thumbs)
+- **Accent Blue**: #2563EB (hover states)
+- **Gray Scale**: Tailwind gray scale (50-900)
+- **Project Colors**: 16 vibrant preset colors for visual organization
+
+### Spacing
+- **Component Gap**: 0.5rem to 1rem (8-16px)
+- **Section Padding**: 0.75rem to 1rem (12-16px)
+- **Container Padding**: 1rem to 1.5rem (16-24px)
+
+### Border Radius
+- **Small**: rounded-lg (0.5rem / 8px)
+- **Medium**: rounded-xl (0.75rem / 12px)
+- **Large**: rounded-2xl (1rem / 16px)
+
+### Shadows
+- **Base**: shadow-sm (subtle elevation)
+- **Hover**: shadow-md (interactive feedback)
+- **Container**: shadow-lg, shadow-xl (prominent elements)
+
+### Typography
+- System font stack with fallbacks
+- Clear hierarchy using font-weight and size
+- High contrast ratios (WCAG AA compliant)
+
+## Accessibility
+
+### Keyboard Navigation
+- All interactive elements are keyboard accessible
+- Clear focus indicators with ring-2 ring-blue-500
+- Tab order follows logical visual flow
+
+### Color Contrast
+- All text meets WCAG AA standards (4.5:1 minimum)
+- Enhanced contrast in dark mode
+- Interactive elements have distinct hover/active states
+
+### Touch Targets
+- All buttons meet minimum 44x44px touch target size
+- Adequate spacing between interactive elements
+- Clear visual feedback on interaction

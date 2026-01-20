@@ -13,14 +13,14 @@ export default function CalendarTodoView() {
   return (
     <div className="flex flex-col h-full" data-testid="calendar-todo-view">
       {/* View Selector */}
-      <div className="flex gap-1 p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-2 p-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => handleViewChange('calendar')}
           data-testid="calendar-view-button"
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-colors ${
+          className={`flex-1 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
             activeView === 'calendar'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-blue-500 text-white shadow-md'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm'
           }`}
         >
           Calendar
@@ -28,10 +28,10 @@ export default function CalendarTodoView() {
         <button
           onClick={() => handleViewChange('todos')}
           data-testid="tasks-view-button"
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-colors ${
+          className={`flex-1 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
             activeView === 'todos'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-blue-500 text-white shadow-md'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm'
           }`}
         >
           Tasks

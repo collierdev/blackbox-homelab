@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Lightbulb, Sun, Palette } from 'lucide-react';
-import { ColorPicker } from './ColorPicker';
+import LightColorPicker from '../shared/LightColorPicker';
 import { supportsColor } from '../../utils/lightCapabilities';
 import type { HALight } from '../../types';
 
@@ -86,14 +86,14 @@ export function LightCard({ light, onToggle, onBrightness, onColor }: LightCardP
             <div>
               <button
                 onClick={() => setColorPickerOpen(!colorPickerOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-secondary/50 transition-colors text-sm font-medium w-full justify-center"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-semibold w-full justify-center shadow-sm"
               >
                 <Palette className="w-4 h-4" />
-                {colorPickerOpen ? 'Hide Color Picker' : 'Show Color Picker'}
+                {colorPickerOpen ? 'Hide Color Picker' : 'Choose Color'}
               </button>
               {colorPickerOpen && (
-                <div className="mt-3 p-3 bg-secondary/30 rounded-lg">
-                  <ColorPicker
+                <div className="mt-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 shadow-lg">
+                  <LightColorPicker
                     rgb={currentColor}
                     onChange={handleColorChange}
                   />
