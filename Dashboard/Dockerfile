@@ -34,8 +34,8 @@ COPY --from=server-builder /app/server/package.json ./
 COPY --from=client-builder /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
-ENV PORT=80
+ENV PORT=8080
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["node", "dist/index.js"]

@@ -105,9 +105,9 @@ export default function TodoList() {
   const completedTasks = tasks.filter(t => !t.parentTaskId && t.completed).length;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900" data-testid="todo-list">
+    <div className="flex flex-col h-full bg-card" data-testid="todo-list">
       {/* Header */}
-      <div className="flex flex-col gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="flex flex-col gap-3 p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="tasks-header">Tasks</h2>

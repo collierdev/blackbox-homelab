@@ -38,34 +38,64 @@ Custom subagents for specialized tasks. See `~/software-report/CLAUDE_AGENTS.md`
 
 ## Installed Services
 
-| Service | Type | Access |
-|---------|------|--------|
-| Docker | System | CLI: `docker` |
-| Jellyfin | Docker | http://192.168.50.39:8096 |
-| n8n | Docker | http://192.168.50.39:5678 |
-| **Pi Dashboard** | Docker | http://192.168.50.39 |
-| **Home Assistant** | Docker | http://192.168.50.39:8123 |
-| **go2rtc** | Docker | http://192.168.50.39:1984 |
-| Plex | System | http://192.168.50.39:32400/web |
-| Portainer | Docker | https://192.168.50.39:9443 |
-| Ollama | System | http://localhost:11434 |
-| Tailscale | System | CLI: `tailscale` |
-| GitHub CLI | System | CLI: `gh` |
-| **Samba** | System | `\\192.168.50.39` (Windows) |
-| **ZFS** | System | Pool: `blackbox` at `/blackbox` |
+**Access**: All services are available through nginx reverse proxy with friendly URLs powered by local DNS (dnsmasq).
+
+| Service | Type | Proxy URL | Direct URL |
+|---------|------|-----------|------------|
+| Docker | System | - | CLI: `docker` |
+| **Pi Dashboard** | Docker | http://blackbox/ | http://192.168.50.39:8080 |
+| Jellyfin | Docker | http://blackbox/jellyfin | http://192.168.50.39:8096 |
+| n8n | Docker | http://blackbox/n8n | http://192.168.50.39:5678 |
+| Portainer | Docker | http://blackbox/portainer | https://192.168.50.39:9443 |
+| Plex | System | http://plex.blackbox | http://192.168.50.39:32400/web |
+| **Home Assistant** | Docker | http://ha.blackbox | http://192.168.50.39:8123 |
+| **go2rtc** | Docker | http://go2rtc.blackbox | http://192.168.50.39:1984 |
+| Ollama | System | - | http://localhost:11434 |
+| Tailscale | System | - | CLI: `tailscale` |
+| GitHub CLI | System | - | CLI: `gh` |
+| **nginx** | System | - | Port 80 (reverse proxy) |
+| **dnsmasq** | System | - | Port 53 (DNS server) |
+| **Samba** | System | `\\blackbox` | `\\192.168.50.39` |
+| **ZFS** | System | - | Pool: `blackbox` at `/blackbox` |
+
+### nginx Reverse Proxy + Local DNS
+
+**Status**: ✅ Fully configured and operational
+
+The system uses **nginx** as a reverse proxy with **dnsmasq** for local DNS resolution, providing friendly URLs for all services.
+
+**Routing Strategy**:
+- **Path-based**: Pi Dashboard (root), Jellyfin, Portainer, n8n → `http://blackbox/service`
+- **Subdomain**: Plex, Home Assistant, go2rtc → `http://service.blackbox`
+
+**How it works**:
+1. **dnsmasq** (port 53) resolves `*.blackbox` to `192.168.50.39`
+2. **nginx** (port 80) routes requests to backend services
+3. All services remain accessible on original ports as fallback
+
+**Configuration files**:
+- `/etc/dnsmasq.conf` - DNS server configuration
+- `/etc/nginx/nginx.conf` - Main nginx config
+- `/etc/nginx/sites-available/*` - Service routing configs
+
+**To use on all network devices**: Configure your router to use `192.168.50.39` as primary DNS server.
 
 ### Pi Dashboard
 
 Custom dashboard for system monitoring and service management. Source code in `~/Dashboard/`. See `~/Dashboard/CLAUDE.md` for detailed documentation.
+
+**Access**: http://blackbox/ (or http://192.168.50.39:8080)
 
 **Features**: Real-time CPU/memory/disk/temp stats, service start/stop/restart, network services table with IPs/ports, memory usage by process (sortable), AI chat integration (Ollama/Claude), Home Assistant smart home control (lights, switches, climate, media players, cameras)
 
 **Docker run command** (requires `--pid=host --privileged` for host system access):
 ```bash
 sudo docker run -d --name pi-dashboard --restart=always \
-  -p 80:80 --pid=host --privileged \
+  -p 8080:8080 --pid=host --privileged \
   -v /var/run/docker.sock:/var/run/docker.sock:ro pi-dashboard
 ```
+
+**Note**: Runs on port 8080 (proxied through nginx on port 80)
 
 ## Common Commands
 
@@ -79,6 +109,18 @@ sudo docker restart <container>     # Restart container
 sudo systemctl status <service>     # Check service status
 sudo systemctl restart <service>    # Restart service
 sudo journalctl -u <service> -n 50  # View service logs
+
+# nginx (reverse proxy)
+sudo systemctl status nginx         # Check nginx status
+sudo systemctl restart nginx        # Restart nginx
+sudo nginx -t                       # Test configuration
+sudo tail -f /var/log/nginx/error.log  # View error logs
+
+# dnsmasq (local DNS)
+sudo systemctl status dnsmasq       # Check DNS server status
+sudo systemctl restart dnsmasq      # Restart DNS server
+nslookup blackbox 127.0.0.1         # Test DNS resolution
+sudo journalctl -u dnsmasq -n 20    # View DNS logs
 
 # Ollama (local LLM)
 ollama list                         # List downloaded models

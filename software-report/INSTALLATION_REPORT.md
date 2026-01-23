@@ -1,6 +1,6 @@
 # Installation Report
 
-**Last Updated**: January 19, 2026
+**Last Updated**: January 22, 2026
 
 > **Note**: This file is maintained by Claude Code. When installing or modifying software, update this report to keep system documentation accurate.
 
@@ -18,24 +18,111 @@
 | Software | Version | Status | Access URL | Installed |
 |----------|---------|--------|------------|-----------|
 | Docker | 29.1.4 | Running | CLI: `docker` | Jan 11, 2026 |
-| Jellyfin | Latest | Running | http://192.168.50.39:8096 | Jan 12, 2026 |
-| n8n | Latest | Running | http://192.168.50.39:5678 | Jan 11, 2026 |
-| Plex Media Server | 1.42.2.10156 | Running | http://192.168.50.39:32400/web | Jan 11, 2026 |
+| **nginx** | **1.26.3** | **Running** | **Reverse proxy on port 80** | **Jan 22, 2026** |
+| **dnsmasq** | **2.91** | **Running** | **Local DNS (*.blackbox)** | **Jan 22, 2026** |
+| Jellyfin | Latest | Running | http://blackbox/jellyfin | Jan 12, 2026 |
+| n8n | Latest | Running | http://blackbox/n8n | Jan 11, 2026 |
+| Plex Media Server | 1.42.2.10156 | Running | http://plex.blackbox | Jan 11, 2026 |
 | VS Code | 1.108.0 | Installed | Launch: `code` | Jan 11, 2026 |
 | Ollama | 0.13.5 | Running | API: http://localhost:11434 | Jan 11, 2026 |
-| Portainer | Latest (CE) | Running | https://192.168.50.39:9443 | Jan 12, 2026 |
+| Portainer | Latest (CE) | Running | http://blackbox/portainer | Jan 12, 2026 |
 | Tailscale | 1.92.5 | Running | CLI: `tailscale` | Jan 12, 2026 |
 | tmux | 3.5a | Installed | CLI: `tmux` | Jan 12, 2026 |
 | fail2ban | 1.1.0 | Running | Auto-protecting SSH | Jan 12, 2026 |
 | neovim | 0.10.4 | Installed | CLI: `nvim` | Jan 12, 2026 |
 | Node.js | 24.12.0 | Installed | CLI: `node`, `npm` | Jan 12, 2026 |
-| Samba | 4.22.6 | Running | `\\192.168.50.39` | Jan 13, 2026 |
+| Samba | 4.22.6 | Running | `\\192.168.50.39` or `\\blackbox` | Jan 13, 2026 |
 | ZFS | 2.3.1 | Running | Pool: `blackbox` (899GB) | Jan 13, 2026 |
 | zfs-auto-snapshot | 1.2.4 | Running | Auto snapshots enabled | Jan 13, 2026 |
 | GitHub CLI | 2.83.2 | Installed | CLI: `gh` | Jan 13, 2026 |
-| **Home Assistant** | Latest | Running | http://192.168.50.39:8123 | Jan 13, 2026 |
-| **go2rtc** | 1.9.13 | Running | http://192.168.50.39:1984 | Jan 14, 2026 |
-| **Pi Dashboard** | Custom | Running | http://192.168.50.39 | Jan 12, 2026 |
+| **Home Assistant** | Latest | Running | http://ha.blackbox | Jan 13, 2026 |
+| **go2rtc** | 1.9.13 | Running | http://go2rtc.blackbox | Jan 14, 2026 |
+| **Pi Dashboard** | Custom | Running | http://blackbox | Jan 12, 2026 |
+
+---
+
+## Reverse Proxy & Local DNS
+
+### Architecture
+
+**nginx** (port 80) acts as a reverse proxy with friendly URLs powered by **dnsmasq** local DNS.
+
+**DNS Resolution**:
+- All `*.blackbox` domains resolve to `192.168.50.39` via dnsmasq
+- Configured in `/etc/resolv.conf` to use `127.0.0.1` (dnsmasq) as primary DNS
+- Falls back to Tailscale DNS (`100.100.100.100`) if dnsmasq is unavailable
+- External DNS forwarded to `8.8.8.8` and `1.1.1.1`
+
+**Routing Strategy**:
+- **Path-based**: Pi Dashboard, Jellyfin, Portainer, n8n → `http://blackbox/service`
+- **Subdomain**: Plex, Home Assistant, go2rtc → `http://service.blackbox`
+
+### Service Routing Table
+
+| Service | Friendly URL | Backend Port | Type |
+|---------|--------------|--------------|------|
+| Pi Dashboard | http://blackbox/ | 8080 | Path |
+| Jellyfin | http://blackbox/jellyfin | 8096 | Path |
+| Portainer | http://blackbox/portainer | 9443 (HTTPS) | Path |
+| n8n | http://blackbox/n8n | 5678 | Path |
+| Plex | http://plex.blackbox | 32400 | Subdomain |
+| Home Assistant | http://ha.blackbox | 8123 | Subdomain |
+| go2rtc | http://go2rtc.blackbox | 1984 | Subdomain |
+
+**Note**: All services remain accessible on their original ports for debugging/direct access.
+
+### Special Considerations
+
+**go2rtc WebRTC**: UDP port 8555 is **NOT proxied** - camera WebRTC streams connect directly to this port for peer-to-peer video.
+
+**Jellyfin Base URL**: Requires manual configuration in Jellyfin admin:
+- Dashboard → Settings → Networking → Base URL: `/jellyfin`
+
+**Plex Custom URL**: Requires manual configuration in Plex admin:
+- Settings → Network → Custom server access URLs: `http://plex.blackbox`
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `/etc/dnsmasq.conf` | DNS server config (*.blackbox → 192.168.50.39) |
+| `/etc/nginx/nginx.conf` | Main nginx config |
+| `/etc/nginx/sites-available/blackbox-main` | Path-based routing (Pi Dashboard, Jellyfin, Portainer, n8n) |
+| `/etc/nginx/sites-available/plex.blackbox` | Plex subdomain |
+| `/etc/nginx/sites-available/ha.blackbox` | Home Assistant subdomain |
+| `/etc/nginx/sites-available/go2rtc.blackbox` | go2rtc subdomain |
+| `/etc/resolv.conf` | System DNS config (immutable with `chattr +i`) |
+
+### Management Commands
+
+```bash
+# nginx
+sudo systemctl status nginx
+sudo systemctl restart nginx
+sudo systemctl reload nginx         # Reload config without dropping connections
+sudo nginx -t                        # Test configuration
+sudo tail -f /var/log/nginx/access.log  # View access logs
+sudo tail -f /var/log/nginx/error.log   # View error logs
+
+# dnsmasq
+sudo systemctl status dnsmasq
+sudo systemctl restart dnsmasq
+dig @127.0.0.1 blackbox +short      # Test DNS resolution
+dig @127.0.0.1 plex.blackbox +short # Test subdomain resolution
+
+# Test proxy routing
+curl -I http://blackbox/            # Pi Dashboard
+curl -I http://blackbox/jellyfin    # Jellyfin
+curl -I http://plex.blackbox        # Plex
+curl -I http://ha.blackbox          # Home Assistant
+```
+
+### Router Configuration
+
+To use friendly URLs from all devices on the network:
+1. Set router DHCP/DNS to: `192.168.50.39` (primary), `8.8.8.8` (secondary)
+2. Renew DHCP on clients: `ipconfig /release && ipconfig /renew` (Windows)
+3. Test: `ping blackbox` should resolve to `192.168.50.39`
 
 ---
 

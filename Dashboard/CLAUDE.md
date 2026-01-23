@@ -6,11 +6,12 @@ A real-time web dashboard for monitoring and managing a Raspberry Pi 5 server.
 
 | Item | Value |
 |------|-------|
-| Access URL | http://192.168.50.39 |
+| Access URL | **http://blackbox/** (proxy) or http://192.168.50.39:8080 (direct) |
 | Container Name | `pi-dashboard` |
-| Port | 80 |
+| Port | 8080 (proxied through nginx on port 80) |
 | Auto-restart | Yes (`--restart=always`) |
 | Special Flags | `--pid=host --privileged` (required for host system access) |
+| Reverse Proxy | ✅ nginx on port 80 with WebSocket support |
 
 ## Architecture Overview
 
@@ -92,20 +93,33 @@ Key files:
 | `/api/go2rtc/cameras/:id` | GET | Get single camera details |
 | WebSocket `/socket.io` | - | Real-time stats + HA device updates |
 
+## Reverse Proxy Setup
+
+The Pi Dashboard is accessible through **nginx reverse proxy** with friendly DNS names:
+- **Primary URL**: http://blackbox/ (via nginx on port 80)
+- **Direct URL**: http://192.168.50.39:8080 (direct to container)
+
+All services have friendly URLs powered by **dnsmasq** local DNS:
+- Path-based: `http://blackbox/service` (Jellyfin, n8n, Portainer)
+- Subdomain: `http://service.blackbox` (Plex, Home Assistant, go2rtc)
+
+The container runs on port 8080 internally, proxied through nginx on port 80.
+
 ## Managed Services
 
 The dashboard monitors and controls these services:
 
-| Service | Type | Default URL |
-|---------|------|-------------|
-| Jellyfin | Docker | http://192.168.50.39:8096 |
-| n8n | Docker | http://192.168.50.39:5678 |
-| Portainer | Docker | https://192.168.50.39:9443 |
-| Home Assistant | Docker | http://192.168.50.39:8123 |
-| Plex | systemd | http://192.168.50.39:32400/web |
-| Ollama | systemd | http://localhost:11434 |
-| Tailscale | systemd | - |
-| Samba | systemd | `\\192.168.50.39` (Windows file sharing) |
+| Service | Type | Proxy URL | Direct URL |
+|---------|------|-----------|------------|
+| Jellyfin | Docker | http://blackbox/jellyfin | http://192.168.50.39:8096 |
+| n8n | Docker | http://blackbox/n8n | http://192.168.50.39:5678 |
+| Portainer | Docker | http://blackbox/portainer | https://192.168.50.39:9443 |
+| Home Assistant | Docker | http://ha.blackbox | http://192.168.50.39:8123 |
+| Plex | systemd | http://plex.blackbox | http://192.168.50.39:32400/web |
+| go2rtc | systemd | http://go2rtc.blackbox | http://192.168.50.39:1984 |
+| Ollama | systemd | - | http://localhost:11434 |
+| Tailscale | systemd | - | - |
+| Samba | systemd | `\\blackbox` | `\\192.168.50.39` |
 
 To add a new service, edit `server/src/utils/docker.ts`:
 - Add to `SERVICES_CONFIG` object with type, url, and port
