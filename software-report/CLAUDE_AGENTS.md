@@ -147,6 +147,167 @@ Installed globally via npm: `/usr/bin/mcp-memory-keeper`
 }
 ```
 
+### n8n MCP Server
+
+Docker image: `ghcr.io/czlonkowski/n8n-mcp:latest` (~280MB, ARM64 compatible)
+
+**Purpose:** Enables Claude Code to interact with n8n workflows - read documentation, manage workflows, execute automation, and query results.
+
+**Connected to:** Local n8n instance at http://n8n.blackbox (192.168.50.39:5678)
+
+**Features:**
+- Read and search n8n workflow documentation
+- Create, update, and delete workflows via API
+- Execute workflows and check status
+- Query workflow execution results
+- Integration with local n8n automation workflows
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm", "--init",
+        "-e", "MCP_MODE=stdio",
+        "-e", "LOG_LEVEL=error",
+        "-e", "DISABLE_CONSOLE_OUTPUT=true",
+        "-e", "N8N_API_URL=http://192.168.50.39:5678",
+        "-e", "N8N_API_KEY=<your-n8n-api-key>",
+        "ghcr.io/czlonkowski/n8n-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+**Container behavior:**
+- Ephemeral: Spawned on-demand when Claude Code starts (`--rm` flag)
+- Communication: stdio mode for MCP protocol
+- No persistent state needed
+
+**To remove:**
+```bash
+docker rmi ghcr.io/czlonkowski/n8n-mcp:latest
+# Edit ~/.claude/settings.json and remove "n8n-mcp" entry
+```
+
+**Documentation:** https://github.com/czlonkowski/n8n-mcp
+
+### Filesystem MCP Server
+
+NPX package: `@modelcontextprotocol/server-filesystem` (official MCP server)
+
+**Purpose:** Enhanced file operations with security controls and configurable access scopes. Provides more robust file management than built-in Read/Write tools.
+
+**Scoped to:** `/home/jwcollie` and `/blackbox` (ZFS storage pool)
+
+**Features:**
+- Secure file read/write with access control
+- Directory listing and traversal
+- File metadata queries (size, permissions, timestamps)
+- Search and pattern matching
+- Better performance and error handling
+- Prevents access outside specified directories
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/jwcollie",
+        "/blackbox"
+      ]
+    }
+  }
+}
+```
+
+**Why scoped access matters:**
+- Prevents accidental modifications to system files
+- Limits Claude's file access to your working directories
+- ZFS pool (`/blackbox`) for media/backup operations
+- Home directory for development work
+
+**Performance:**
+- Spawned via npx on demand (fast startup)
+- No persistent process needed
+- Automatic cleanup after use
+
+**To remove:**
+```bash
+# Edit ~/.claude/settings.json and remove "filesystem" entry
+# No package to uninstall - npx handles dependencies
+```
+
+**Documentation:** https://github.com/modelcontextprotocol/servers
+
+### Playwright MCP Server
+
+NPX package: `@playwright/mcp` (Microsoft official)
+
+**Purpose:** Browser automation for testing, web scraping, screenshots, and automated interactions. Actively maintained replacement for the deprecated Puppeteer MCP.
+
+**Features:**
+- **Multi-browser support**: Chromium, Firefox, WebKit
+- **Web interactions**: Navigate, click, fill forms, extract data
+- **Visual testing**: Screenshots, PDFs, viewport testing
+- **JavaScript execution**: Run code in browser context
+- **Accessibility testing**: Generate accessibility snapshots
+- **E2E testing**: Integrate with your existing Playwright tests
+- **Headless mode**: Run browsers without GUI
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp"
+      ]
+    }
+  }
+}
+```
+
+**Use cases for your Pi Dashboard:**
+- Automated UI testing of dashboard components
+- Screenshot generation for documentation
+- Test responsive design across mobile/tablet/desktop
+- Web scraping for content discovery (pairs with n8n)
+- Automated form filling for testing
+- Validate accessibility compliance
+- Test camera stream loading (go2rtc integration)
+
+**Why Playwright over Puppeteer:**
+- ✅ Microsoft-maintained (active development)
+- ✅ Cross-browser support (not just Chromium)
+- ✅ Better error handling and debugging
+- ✅ Official MCP implementation
+- ✅ Integrated with your existing Playwright E2E tests
+
+**Performance:**
+- Spawned via npx on demand
+- First run downloads browser binaries (~200-300MB per browser)
+- Subsequent runs are fast (browsers cached)
+- Headless mode for better Pi performance
+
+**To remove:**
+```bash
+# Edit ~/.claude/settings.json and remove "playwright" entry
+# Optional: Clean up cached browsers
+npx playwright uninstall
+```
+
+**Documentation:** https://github.com/microsoft/playwright-mcp
+
 ---
 
 ## Pre-Approved Bash Commands
@@ -261,6 +422,27 @@ sudo npm uninstall -g mcp-memory-keeper
 ---
 
 ## Changelog
+
+- **2026-02-03**: Playwright MCP Server
+  - Added Playwright MCP server (Microsoft official)
+  - Browser automation for testing and web interactions
+  - Multi-browser support (Chromium, Firefox, WebKit)
+  - Replaces deprecated Puppeteer MCP
+  - Perfect for Pi Dashboard E2E testing
+
+- **2026-02-03**: Filesystem MCP Server
+  - Added filesystem MCP server (official npx package)
+  - Enhanced file operations with security controls
+  - Scoped access to /home/jwcollie and /blackbox
+  - Better performance than built-in Read/Write tools
+  - Prevents access to system files
+
+- **2026-02-03**: n8n MCP Server
+  - Added n8n-mcp MCP server (Docker-based)
+  - Enables Claude Code to manage n8n workflows
+  - Connected to local n8n instance at http://n8n.blackbox
+  - ~280MB Docker image, ARM64 compatible
+  - Ephemeral container spawned on-demand
 
 - **2026-01-15**: Initial setup
   - Created 4 custom agents (frontend, backend, syseng, pm)

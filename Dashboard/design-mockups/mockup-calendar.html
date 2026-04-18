@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Dashboard - Calendar Component</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 0;
+    }
+    .header {
+      height: 120px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .btn-header {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-header:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    main {
+      height: calc(100vh - 120px);
+      padding: 40px;
+      overflow-y: auto;
+    }
+    .calendar-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .calendar-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+    .nav-btn {
+      padding: 8px 16px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: #e2e8f0;
+    }
+    .nav-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .view-options {
+      display: flex;
+      gap: 8px;
+    }
+    .view-btn {
+      padding: 8px 16px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .view-btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .view-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .calendar-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      min-height: 0;
+    }
+    .day-header {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 8px;
+    }
+    .day-cell {
+      aspect-ratio: 1;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .day-cell:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .day-cell.other-month {
+      color: #cbd5e1;
+      background: #ffffff;
+    }
+    .day-cell.today {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-color: #667eea;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+    .day-number {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .day-events {
+      width: 100%;
+      margin-top: 4px;
+    }
+    .event-dot {
+      width: 6px;
+      height: 6px;
+      background: #667eea;
+      border-radius: 50%;
+      margin: 2px auto;
+    }
+    .event-dot.multiple {
+      background: #f093fb;
+    }
+    .tasks-sidebar {
+      width: 300px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin-left: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+    .tasks-header {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .task-item {
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #475569;
+    }
+    .calendar-wrapper {
+      display: flex;
+      gap: 24px;
+      height: 100%;
+    }
+    .calendar-main {
+      flex: 1;
+      min-width: 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>⚡ Pi Dashboard</h1>
+    <div class="header-actions">
+      <button class="btn-header">Settings</button>
+      <button class="btn-header">Profile</button>
+    </div>
+  </header>
+  <main>
+    <div class="calendar-wrapper">
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <div class="calendar-nav">
+            <button class="nav-btn active">Today</button>
+            <h2 class="calendar-title">January 2026</h2>
+            <button class="nav-btn">←</button>
+            <button class="nav-btn">→</button>
+          </div>
+          <div class="view-options">
+            <button class="view-btn">Day</button>
+            <button class="view-btn">Week</button>
+            <button class="view-btn active">Month</button>
+            <button class="view-btn">2 Months</button>
+            <button class="view-btn">Circular</button>
+          </div>
+        </div>
+        <div class="calendar-main">
+          <div class="calendar-grid">
+            <div class="day-header">Sun</div>
+            <div class="day-header">Mon</div>
+            <div class="day-header">Tue</div>
+            <div class="day-header">Wed</div>
+            <div class="day-header">Thu</div>
+            <div class="day-header">Fri</div>
+            <div class="day-header">Sat</div>
+            
+            <div class="day-cell other-month">
+              <div class="day-number">28</div>
+            </div>
+            <div class="day-cell other-month">
+              <div class="day-number">29</div>
+            </div>
+            <div class="day-cell other-month">
+              <div class="day-number">30</div>
+            </div>
+            <div class="day-cell other-month">
+              <div class="day-number">31</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">1</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">2</div>
+              <div class="day-events">
+                <div class="event-dot"></div>
+              </div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">3</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">4</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">5</div>
+              <div class="day-events">
+                <div class="event-dot"></div>
+                <div class="event-dot multiple"></div>
+              </div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">6</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">7</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">8</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">9</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">10</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">11</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">12</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">13</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">14</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">15</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">16</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">17</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">18</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">19</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">20</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">21</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">22</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">23</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">24</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">25</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">26</div>
+            </div>
+            <div class="day-cell today">
+              <div class="day-number">27</div>
+              <div class="day-events">
+                <div class="event-dot"></div>
+              </div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">28</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">29</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">30</div>
+            </div>
+            <div class="day-cell">
+              <div class="day-number">31</div>
+            </div>
+            <div class="day-cell other-month">
+              <div class="day-number">1</div>
+            </div>
+            <div class="day-cell other-month">
+              <div class="day-number">2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tasks-sidebar">
+        <div class="tasks-header">Tasks</div>
+        <div style="margin-bottom: 16px;">
+          <button class="nav-btn" style="width: 100%;">All Projects</button>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <button class="nav-btn active" style="width: 100%;">New Event</button>
+        </div>
+        <div style="flex: 1; overflow-y: auto;">
+          <div class="task-item">Service maintenance scheduled</div>
+          <div class="task-item">Update system packages</div>
+          <div class="task-item">Review logs</div>
+          <div class="task-item">Backup configuration</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

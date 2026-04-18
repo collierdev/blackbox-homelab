@@ -107,7 +107,32 @@ export interface HALight extends HAEntity {
     min_color_temp_kelvin?: number;
     max_color_temp_kelvin?: number;
     supported_color_modes?: string[];
+    effect?: string;
+    effect_list?: string[];
   };
+}
+
+// Light Fixture - grouping multiple lights for unified control
+export interface LightFixture {
+  id: string;
+  name: string;
+  lightIds: string[]; // Home Assistant entity IDs
+  icon?: string;      // Icon name (lamp, ceiling, chandelier, etc.)
+  room?: string;      // Room for grouping
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Color mode types for the enhanced color picker
+export type ColorMode = 'rgb' | 'hs' | 'color_temp';
+
+export interface ColorValue {
+  mode: ColorMode;
+  rgb?: [number, number, number];
+  hs?: [number, number]; // hue 0-360, saturation 0-100
+  kelvin?: number;
+  brightness?: number; // 0-255
 }
 
 export interface HAClimate extends HAEntity {
@@ -268,4 +293,30 @@ export interface SyncConflict {
   localVersion: Event;
   remoteVersion: unknown;
   conflictType: 'both_modified' | 'local_deleted_remote_modified' | 'remote_deleted_local_modified';
+}
+
+// Notification Types
+export type NotificationType = 'info' | 'success' | 'warning' | 'error';
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface NotificationLink {
+  label: string;
+  url?: string;          // External URL
+  eventId?: string;      // Link to calendar event
+  taskId?: string;       // Link to task
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  links: NotificationLink[];
+  source?: string;       // e.g., 'nightly-automation', 'system', 'user'
+  metadata?: Record<string, unknown>;
+  autoDismissMs?: number;
+  createdAt: string;
+  readAt?: string;
+  dismissedAt?: string;
 }

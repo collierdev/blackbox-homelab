@@ -1,6 +1,6 @@
 # Installation Report
 
-**Last Updated**: January 22, 2026
+**Last Updated**: February 3, 2026
 
 > **Note**: This file is maintained by Claude Code. When installing or modifying software, update this report to keep system documentation accurate.
 
@@ -38,6 +38,11 @@
 | **Home Assistant** | Latest | Running | http://ha.blackbox | Jan 13, 2026 |
 | **go2rtc** | 1.9.13 | Running | http://go2rtc.blackbox | Jan 14, 2026 |
 | **Pi Dashboard** | Custom | Running | http://blackbox | Jan 12, 2026 |
+| **n8n MCP Server** | Latest | Configured | Docker (ephemeral) | Feb 3, 2026 |
+| **Filesystem MCP Server** | Latest | Configured | NPX (on-demand) | Feb 3, 2026 |
+| **Playwright MCP Server** | Latest | Configured | NPX (on-demand) | Feb 3, 2026 |
+| **CouchDB** | 3.5.1 | Running | https://vault.blackbox | Apr 1, 2026 |
+| **Obsidian** | 1.12.7 | Installed | `~/obsidian/` (AppImage) | Apr 1, 2026 |
 
 ---
 
@@ -68,6 +73,7 @@
 | Plex | http://plex.blackbox | 32400 | Subdomain |
 | Home Assistant | http://ha.blackbox | 8123 | Subdomain |
 | go2rtc | http://go2rtc.blackbox | 1984 | Subdomain |
+| CouchDB (LiveSync) | https://vault.blackbox | 5984 | Subdomain (HTTPS) |
 
 **Note**: All services remain accessible on their original ports for debugging/direct access.
 
@@ -91,6 +97,9 @@
 | `/etc/nginx/sites-available/plex.blackbox` | Plex subdomain |
 | `/etc/nginx/sites-available/ha.blackbox` | Home Assistant subdomain |
 | `/etc/nginx/sites-available/go2rtc.blackbox` | go2rtc subdomain |
+| `/etc/nginx/sites-available/vault.blackbox` | CouchDB HTTPS proxy |
+| `/etc/nginx/ssl/vault.blackbox.crt` | Self-signed SSL certificate |
+| `/etc/nginx/ssl/vault.blackbox.key` | SSL private key |
 | `/etc/resolv.conf` | System DNS config (immutable with `chattr +i`) |
 
 ### Management Commands
@@ -382,6 +391,8 @@ These tools were already present before this setup:
 | 11434 | Ollama API | HTTP |
 | 32400 | Plex | HTTP |
 | 41641 | Tailscale (UDP) | UDP |
+| 443 | nginx (HTTPS - vault.blackbox) | HTTPS |
+| 5984 | CouchDB | HTTP |
 
 ---
 

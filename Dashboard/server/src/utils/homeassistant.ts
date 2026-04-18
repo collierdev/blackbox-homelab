@@ -136,6 +136,85 @@ export async function setLightColor(entityId: string, rgbColor: [number, number,
   return callService('light', 'turn_on', entityId, { rgb_color: rgbColor });
 }
 
+// Set light color using HS (Hue/Saturation) - common for smart bulbs
+export async function setLightHSColor(entityId: string, hsColor: [number, number]): Promise<HAEntityState[]> {
+  return callService('light', 'turn_on', entityId, { hs_color: hsColor });
+}
+
+// Set light color temperature in Kelvin
+export async function setLightColorTemp(entityId: string, kelvin: number): Promise<HAEntityState[]> {
+  return callService('light', 'turn_on', entityId, { color_temp_kelvin: kelvin });
+}
+
+// Set light effect
+export async function setLightEffect(entityId: string, effect: string): Promise<HAEntityState[]> {
+  return callService('light', 'turn_on', entityId, { effect });
+}
+
+// Control multiple lights at once (for fixtures)
+export async function setMultipleLightsBrightness(entityIds: string[], brightness: number): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await setLightBrightness(entityId, brightness);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function setMultipleLightsColor(entityIds: string[], rgbColor: [number, number, number]): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await setLightColor(entityId, rgbColor);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function setMultipleLightsHSColor(entityIds: string[], hsColor: [number, number]): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await setLightHSColor(entityId, hsColor);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function setMultipleLightsColorTemp(entityIds: string[], kelvin: number): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await setLightColorTemp(entityId, kelvin);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function toggleMultipleLights(entityIds: string[]): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await toggleEntity(entityId);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function turnOnMultipleLights(entityIds: string[]): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await turnOn(entityId);
+    results.push(...result);
+  }
+  return results;
+}
+
+export async function turnOffMultipleLights(entityIds: string[]): Promise<HAEntityState[]> {
+  const results: HAEntityState[] = [];
+  for (const entityId of entityIds) {
+    const result = await turnOff(entityId);
+    results.push(...result);
+  }
+  return results;
+}
+
 // Climate-specific functions
 export async function setClimateTemperature(entityId: string, temperature: number): Promise<HAEntityState[]> {
   return callService('climate', 'set_temperature', entityId, { temperature });

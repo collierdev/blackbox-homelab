@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
-import type { SystemStats, HADevices, HAStatus, Event, Task, Project, SyncAccount } from '../types';
+import type { SystemStats, HADevices, HAStatus, Event, Task, Project, SyncAccount, LightFixture, ColorValue, Notification } from '../types';
 
 const SOCKET_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
@@ -14,12 +14,17 @@ export function useSocket() {
   // Home Assistant state
   const [haDevices, setHaDevices] = useState<HADevices | null>(null);
   const [haStatus, setHaStatus] = useState<HAStatus>({ connected: false });
+  const [lightFixtures, setLightFixtures] = useState<LightFixture[]>([]);
 
   // Calendar & Todo state
   const [events, setEvents] = useState<Event[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [syncAccounts, setSyncAccounts] = useState<SyncAccount[]>([]);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
@@ -56,6 +61,26 @@ export function useSocket() {
 
     newSocket.on('projects', (data: Project[]) => {
       setProjects(data);
+    });
+
+    // Light fixtures events
+    newSocket.on('lightFixtures', (data: LightFixture[]) => {
+      setLightFixtures(data);
+    });
+
+    // Notification events
+    newSocket.on('notifications', (data: Notification[]) => {
+      setNotifications(data);
+    });
+
+    newSocket.on('notificationCount', (count: number) => {
+      setUnreadNotificationCount(count);
+    });
+
+    newSocket.on('newNotification', (notification: Notification) => {
+      // Add new notification to the top of the list
+      setNotifications(prev => [notification, ...prev.filter(n => n.id !== notification.id)]);
+      setUnreadNotificationCount(prev => prev + 1);
     });
 
     setSocket(newSocket);
@@ -144,6 +169,139 @@ export function useSocket() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rgb_color: rgb })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setLightHsColor = useCallback(async (entityId: string, hsColor: [number, number]): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/homeassistant/lights/${entityId}/hs_color`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hs_color: hsColor })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setLightColorTemp = useCallback(async (entityId: string, kelvin: number): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/homeassistant/lights/${entityId}/color_temp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kelvin })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setLightEffect = useCallback(async (entityId: string, effect: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/homeassistant/lights/${entityId}/effect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ effect })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Fixture API functions
+  const createFixture = useCallback(async (data: { name: string; lightIds: string[]; icon?: string; room?: string }): Promise<LightFixture | null> => {
+    try {
+      const res = await fetch(`${API_URL}/api/fixtures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const updateFixture = useCallback(async (id: string, data: { name?: string; lightIds?: string[]; icon?: string; room?: string }): Promise<LightFixture | null> => {
+    try {
+      const res = await fetch(`${API_URL}/api/fixtures/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const deleteFixture = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/fixtures/${id}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const toggleFixture = useCallback(async (fixtureId: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/fixtures/${fixtureId}/toggle`, {
+        method: 'POST'
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setFixtureBrightness = useCallback(async (fixtureId: string, brightness: number): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/fixtures/${fixtureId}/brightness`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brightness })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setFixtureColor = useCallback(async (fixtureId: string, colorValue: ColorValue): Promise<boolean> => {
+    try {
+      // Determine which endpoint to call based on color mode
+      let endpoint: string;
+      let payload: Record<string, unknown>;
+
+      if (colorValue.mode === 'color_temp' && colorValue.kelvin !== undefined) {
+        endpoint = `${API_URL}/api/fixtures/${fixtureId}/color_temp`;
+        payload = { kelvin: colorValue.kelvin };
+      } else if (colorValue.mode === 'hs' && colorValue.hs) {
+        endpoint = `${API_URL}/api/fixtures/${fixtureId}/hs_color`;
+        payload = { hs_color: colorValue.hs };
+      } else if (colorValue.rgb) {
+        endpoint = `${API_URL}/api/fixtures/${fixtureId}/color`;
+        payload = { rgb_color: colorValue.rgb };
+      } else {
+        return false;
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       return res.ok;
     } catch {
@@ -367,6 +525,84 @@ export function useSocket() {
     fetchSyncAccounts();
   }, [fetchSyncAccounts]);
 
+  // Notification API functions
+  const markNotificationAsRead = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
+        method: 'POST'
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/read-all`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        setUnreadNotificationCount(0);
+      }
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const dismissNotification = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/${id}/dismiss`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const dismissAllNotifications = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/dismiss-all`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        setNotifications([]);
+        setUnreadNotificationCount(0);
+      }
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const createNotification = useCallback(async (data: {
+    title: string;
+    message: string;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    links?: Array<{ label: string; url?: string; eventId?: string; taskId?: string }>;
+    source?: string;
+    metadata?: Record<string, unknown>;
+    autoDismissMs?: number;
+  }): Promise<Notification | null> => {
+    try {
+      const res = await fetch(`${API_URL}/api/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, []);
+
   return {
     socket,
     stats,
@@ -377,10 +613,21 @@ export function useSocket() {
     toggleEntity,
     setLightBrightness,
     setLightColor,
+    setLightHsColor,
+    setLightColorTemp,
+    setLightEffect,
     setClimateTemperature,
     mediaPlayerAction,
     setMediaVolume,
     refreshCameraSnapshot,
+    // Light Fixtures
+    lightFixtures,
+    createFixture,
+    updateFixture,
+    deleteFixture,
+    toggleFixture,
+    setFixtureBrightness,
+    setFixtureColor,
     // Calendar & Todo
     events,
     tasks,
@@ -401,6 +648,14 @@ export function useSocket() {
     deleteProject,
     reorderProjects,
     fetchSyncAccounts,
-    disconnectSyncAccount
+    disconnectSyncAccount,
+    // Notifications
+    notifications,
+    unreadNotificationCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    dismissNotification,
+    dismissAllNotifications,
+    createNotification
   };
 }

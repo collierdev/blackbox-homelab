@@ -132,7 +132,13 @@ export async function verifyConnection(): Promise<boolean> {
 
   try {
     const result = await session.run('RETURN 1 as num');
-    const isConnected = result.records.length > 0 && result.records[0].get('num') === 1;
+    // Neo4j returns Integer objects, not plain numbers - use toNumber() or check .low property
+    const num = result.records[0]?.get('num');
+    const isConnected = result.records.length > 0 && (
+      num === 1 ||
+      (num && typeof num.toNumber === 'function' && num.toNumber() === 1) ||
+      (num && num.low === 1)
+    );
 
     if (isConnected) {
       console.log('✓ Neo4J connection verified');

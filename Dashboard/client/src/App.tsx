@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Home, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Home, CalendarDays, Bot, Monitor, FolderOpen } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -20,13 +20,17 @@ import { Header } from './components/Header';
 import { SystemStats } from './components/SystemStats';
 import { Services } from './components/Services';
 import { ChatBot } from './components/ChatBot';
+import { NotificationPopup } from './components/NotificationPopup';
 import { HomeAssistant } from './components/HomeAssistant';
 import { CamerasSection } from './components/go2rtc/CamerasSection';
 import { DraggableSection } from './components/DraggableSection';
 import { useSocket } from './hooks/useSocket';
 import CalendarTodoView from './components/CalendarTodoView';
+import { DayPlanner } from './components/DayPlanner';
+import { VaultEditor } from './components/VaultEditor';
+import { DisplayPage } from './components/DisplayPage';
 
-type Tab = 'dashboard' | 'smarthome' | 'calendar';
+type Tab = 'dashboard' | 'smarthome' | 'calendar' | 'chat' | 'planner' | 'vault';
 
 // Section IDs for drag-and-drop
 type SectionId = 'system-overview' | 'cameras' | 'services' | 'smart-home';
@@ -93,7 +97,22 @@ function Dashboard() {
     setLightColor,
     setClimateTemperature,
     mediaPlayerAction,
-    setMediaVolume
+    setMediaVolume,
+    // Light Fixtures
+    lightFixtures,
+    createFixture,
+    updateFixture,
+    deleteFixture,
+    toggleFixture,
+    setFixtureBrightness,
+    setFixtureColor,
+    // Notifications
+    notifications,
+    unreadNotificationCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    dismissNotification,
+    dismissAllNotifications
   } = useSocket();
 
   // Save section order to localStorage whenever it changes
@@ -164,6 +183,13 @@ function Dashboard() {
               onClimateTemperature={setClimateTemperature}
               onMediaAction={mediaPlayerAction}
               onMediaVolume={setMediaVolume}
+              fixtures={lightFixtures}
+              onFixtureToggle={toggleFixture}
+              onFixtureBrightness={setFixtureBrightness}
+              onFixtureColor={setFixtureColor}
+              onFixtureCreate={createFixture}
+              onFixtureUpdate={updateFixture}
+              onFixtureDelete={deleteFixture}
             />
           </DraggableSection>
         );
@@ -199,13 +225,36 @@ function Dashboard() {
               icon={<CalendarDays className="w-4 h-4" />}
               label="Calendar & Tasks"
             />
+            <TabButton
+              active={activeTab === 'chat'}
+              onClick={() => setActiveTab('chat')}
+              icon={<Bot className="w-4 h-4" />}
+              label="AI Chat"
+            />
+            <TabButton
+              active={activeTab === 'planner'}
+              onClick={() => setActiveTab('planner')}
+              icon={<Monitor className="w-4 h-4" />}
+              label="Day Planner"
+            />
+            <TabButton
+              active={activeTab === 'vault'}
+              onClick={() => setActiveTab('vault')}
+              icon={<FolderOpen className="w-4 h-4" />}
+              label="Vault"
+            />
           </div>
         </div>
       </nav>
 
-      <main className={activeTab === 'calendar'
-        ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)] flex flex-col'
-        : 'container mx-auto px-6 py-6 space-y-8'
+      <main className={
+        activeTab === 'planner'
+          ? 'h-[calc(100vh-64px)] overflow-hidden p-0'
+          : activeTab === 'vault'
+          ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)]'
+          : activeTab === 'calendar' || activeTab === 'chat'
+          ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)] flex flex-col'
+          : 'container mx-auto px-6 py-6 space-y-8'
       }>
         {activeTab === 'dashboard' ? (
           <DndContext
@@ -232,21 +281,67 @@ function Dashboard() {
               onClimateTemperature={setClimateTemperature}
               onMediaAction={mediaPlayerAction}
               onMediaVolume={setMediaVolume}
+              fixtures={lightFixtures}
+              onFixtureToggle={toggleFixture}
+              onFixtureBrightness={setFixtureBrightness}
+              onFixtureColor={setFixtureColor}
+              onFixtureCreate={createFixture}
+              onFixtureUpdate={updateFixture}
+              onFixtureDelete={deleteFixture}
             />
           </section>
-        ) : (
+        ) : activeTab === 'calendar' ? (
           <div className="h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
             <CalendarTodoView />
+          </div>
+        ) : activeTab === 'chat' ? (
+          <div className="h-full max-w-4xl mx-auto">
+            <ChatBot inline />
+          </div>
+        ) : activeTab === 'planner' ? (
+          <DayPlanner />
+        ) : (
+          <div className="h-full">
+            <VaultEditor />
           </div>
         )}
       </main>
 
-      <ChatBot />
+      <NotificationPopup
+        notifications={notifications}
+        unreadCount={unreadNotificationCount}
+        onMarkAsRead={markNotificationAsRead}
+        onMarkAllAsRead={markAllNotificationsAsRead}
+        onDismiss={dismissNotification}
+        onDismissAll={dismissAllNotifications}
+        onNavigateToEvent={(eventId) => {
+          setActiveTab('calendar');
+          // TODO: Add event selection logic
+          console.log('Navigate to event:', eventId);
+        }}
+        onNavigateToTask={(taskId) => {
+          setActiveTab('calendar');
+          // TODO: Add task selection logic
+          console.log('Navigate to task:', taskId);
+        }}
+      />
     </div>
   );
 }
 
 function App() {
+  const [isDisplay, setIsDisplay] = useState(
+    () => window.location.hash === '#display'
+  );
+
+  useEffect(() => {
+    const onHash = () => setIsDisplay(window.location.hash === '#display');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  if (isDisplay) return <DisplayPage />;
+
   return (
     <ThemeProvider>
       <Dashboard />

@@ -12,12 +12,19 @@ import calendarRoutes from './routes/calendar';
 import todosRoutes from './routes/todos';
 import projectsRoutes from './routes/projects';
 import syncRoutes from './routes/sync';
+import fixturesRoutes from './routes/fixtures';
+import notificationsRoutes from './routes/notifications';
+import vaultRoutes from './routes/vault';
+import plannerRoutes from './routes/planner';
 import { getSystemStats } from './utils/systemInfo';
 import { getGroupedEntities, checkConnection } from './utils/homeassistant';
 import { initializeSchema, verifyConnection, getDatabaseStats } from './config/neo4j';
 import { getAllEvents, getEventsByDateRange } from './models/event';
 import { getAllTasks } from './models/task';
 import { getAllProjects } from './models/project';
+import { getAllFixtures } from './models/fixture';
+import { getAllNotifications, getUnreadCount } from './models/notification';
+import type { Notification } from './models/notification';
 import { startSyncScheduler, stopSyncScheduler } from './services/sync/manager';
 import { startTodoMdWatcher, stopTodoMdWatcher } from './services/todoMdSync';
 
@@ -45,6 +52,10 @@ app.use('/api/calendar/events', calendarRoutes);
 app.use('/api/todos', todosRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/fixtures', fixturesRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/vault', vaultRoutes);
+app.use('/api/planner', plannerRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -82,6 +93,15 @@ io.on('connection', (socket) => {
         socket.emit('haDevices', devices);
       }
       socket.emit('haStatus', status);
+
+      // Also emit light fixtures
+      try {
+        const fixtures = await getAllFixtures();
+        socket.emit('lightFixtures', fixtures);
+      } catch (fixtureError) {
+        // Fixtures are optional, don't fail if Neo4j isn't connected
+        socket.emit('lightFixtures', []);
+      }
     } catch (error) {
       socket.emit('haStatus', { connected: false, error: String(error) });
     }
@@ -112,11 +132,38 @@ io.on('connection', (socket) => {
     }
   }, 5000);
 
+  // Notification updates (every 10 seconds)
+  const notificationInterval = setInterval(async () => {
+    try {
+      const notifications = await getAllNotifications({ undismissedOnly: true, limit: 50 });
+      const unreadCount = await getUnreadCount();
+      socket.emit('notifications', notifications);
+      socket.emit('notificationCount', unreadCount);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      socket.emit('notifications', []);
+      socket.emit('notificationCount', 0);
+    }
+  }, 10000);
+
+  // Send initial notification state on connect
+  (async () => {
+    try {
+      const notifications = await getAllNotifications({ undismissedOnly: true, limit: 50 });
+      const unreadCount = await getUnreadCount();
+      socket.emit('notifications', notifications);
+      socket.emit('notificationCount', unreadCount);
+    } catch (error) {
+      // Notifications are optional, don't fail on connect
+    }
+  })();
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     clearInterval(statsInterval);
     clearInterval(haInterval);
     clearInterval(calendarInterval);
+    clearInterval(notificationInterval);
   });
 });
 
@@ -178,5 +225,10 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+// Helper function to emit notifications to all connected clients
+export function emitNotification(notification: Notification) {
+  io.emit('newNotification', notification);
+}
 
 export { io };

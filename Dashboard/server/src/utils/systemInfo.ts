@@ -59,14 +59,14 @@ export interface ProcessMemory {
 
 // Network services with their URLs and ports
 const NETWORK_SERVICES: NetworkService[] = [
-  { name: 'Pi Dashboard', url: 'http://192.168.50.39', ip: '192.168.50.39', port: 80 },
-  { name: 'Home Assistant', url: 'http://192.168.50.39:8123', ip: '192.168.50.39', port: 8123 },
-  { name: 'Jellyfin', url: 'http://192.168.50.39:8096', ip: '192.168.50.39', port: 8096 },
-  { name: 'n8n', url: 'http://192.168.50.39:5678', ip: '192.168.50.39', port: 5678 },
-  { name: 'Portainer', url: 'https://192.168.50.39:9443', ip: '192.168.50.39', port: 9443 },
-  { name: 'Plex', url: 'http://192.168.50.39:32400/web', ip: '192.168.50.39', port: 32400 },
-  { name: 'Ollama', url: 'http://192.168.50.39:11434', ip: '192.168.50.39', port: 11434 },
-  { name: 'Samba (SMB)', url: '\\\\192.168.50.39', ip: '192.168.50.39', port: 445 },
+  { name: 'Pi Dashboard', url: 'http://blackbox/', ip: '192.168.50.39', port: 80 },
+  { name: 'Home Assistant', url: 'http://ha.blackbox', ip: '192.168.50.39', port: 8123 },
+  { name: 'Jellyfin', url: 'http://jellyfin.blackbox', ip: '192.168.50.39', port: 8096 },
+  { name: 'n8n', url: 'http://n8n.blackbox', ip: '192.168.50.39', port: 5678 },
+  { name: 'Portainer', url: 'http://blackbox/portainer', ip: '192.168.50.39', port: 9443 },
+  { name: 'Plex', url: 'http://plex.blackbox', ip: '192.168.50.39', port: 32400 },
+  { name: 'Ollama', url: 'http://localhost:11434', ip: '192.168.50.39', port: 11434 },
+  { name: 'Samba (SMB)', url: '\\\\blackbox', ip: '192.168.50.39', port: 445 },
   { name: 'Tailscale', url: '', ip: 'See tailscale0', port: 41641 },
 ];
 

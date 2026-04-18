@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Home, ChevronDown, ChevronUp, Lightbulb, Thermometer, Music, Power, Wifi, WifiOff } from 'lucide-react';
+import { Home, ChevronDown, ChevronUp, Lightbulb, Thermometer, Music, Power, Wifi, WifiOff, Layers, Plus } from 'lucide-react';
 import { LightCard } from './homeassistant/LightCard';
 import { SwitchCard } from './homeassistant/SwitchCard';
 import { ClimateCard } from './homeassistant/ClimateCard';
 import { MediaPlayerCard } from './homeassistant/MediaPlayerCard';
+import { FixtureCard } from './homeassistant/FixtureCard';
+import { FixtureManagement } from './homeassistant/FixtureManagement';
 import { CamerasSection } from './go2rtc/CamerasSection';
-import type { HADevices, HAStatus } from '../types';
+import type { HADevices, HAStatus, LightFixture, ColorValue } from '../types';
 
 interface HomeAssistantProps {
   devices: HADevices | null;
@@ -17,6 +19,14 @@ interface HomeAssistantProps {
   onClimateTemperature: (entityId: string, temperature: number) => Promise<boolean>;
   onMediaAction: (entityId: string, action: string) => Promise<boolean>;
   onMediaVolume: (entityId: string, volume: number) => Promise<boolean>;
+  // Fixture props
+  fixtures?: LightFixture[];
+  onFixtureToggle?: (fixtureId: string) => Promise<boolean>;
+  onFixtureBrightness?: (fixtureId: string, brightness: number) => Promise<boolean>;
+  onFixtureColor?: (fixtureId: string, colorValue: ColorValue) => Promise<boolean>;
+  onFixtureCreate?: (data: { name: string; lightIds: string[]; icon?: string; room?: string }) => Promise<LightFixture | null>;
+  onFixtureUpdate?: (id: string, data: { name?: string; lightIds?: string[]; icon?: string; room?: string }) => Promise<LightFixture | null>;
+  onFixtureDelete?: (id: string) => Promise<boolean>;
 }
 
 interface DeviceSectionProps {
@@ -26,9 +36,10 @@ interface DeviceSectionProps {
   expanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  headerAction?: React.ReactNode;
 }
 
-function DeviceSection({ title, icon, count, expanded, onToggle, children }: DeviceSectionProps) {
+function DeviceSection({ title, icon, count, expanded, onToggle, children, headerAction }: DeviceSectionProps) {
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <button
@@ -40,7 +51,10 @@ function DeviceSection({ title, icon, count, expanded, onToggle, children }: Dev
           <span className="font-medium">{title}</span>
           <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">{count}</span>
         </div>
-        {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        <div className="flex items-center gap-2">
+          {headerAction}
+          {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </div>
       </button>
       {expanded && (
         <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -60,15 +74,27 @@ export function HomeAssistant({
   onLightColor,
   onClimateTemperature,
   onMediaAction,
-  onMediaVolume
+  onMediaVolume,
+  // Fixture props
+  fixtures = [],
+  onFixtureToggle,
+  onFixtureBrightness,
+  onFixtureColor,
+  onFixtureCreate,
+  onFixtureUpdate,
+  onFixtureDelete
 }: HomeAssistantProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    fixtures: true,
     lights: true,
     switches: false,
     climate: false,
     media: false,
     cameras: false
   });
+
+  const [fixtureModalOpen, setFixtureModalOpen] = useState(false);
+  const [editingFixture, setEditingFixture] = useState<LightFixture | null>(null);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -79,6 +105,41 @@ export function HomeAssistant({
   const switchesOn = devices?.switches.filter(s => s.state === 'on').length || 0;
   const climateActive = devices?.climate.filter(c => c.state !== 'off').length || 0;
   const mediaPlaying = devices?.media_players.filter(m => m.state === 'playing').length || 0;
+
+  // Count fixtures with any light on
+  const fixturesOn = fixtures.filter(fixture => {
+    const fixtureLights = devices?.lights.filter(l => fixture.lightIds.includes(l.entity_id)) || [];
+    return fixtureLights.some(l => l.state === 'on');
+  }).length;
+
+  const handleEditFixture = (fixtureId: string) => {
+    const fixture = fixtures.find(f => f.id === fixtureId);
+    if (fixture) {
+      setEditingFixture(fixture);
+      setFixtureModalOpen(true);
+    }
+  };
+
+  const handleCloseFixtureModal = () => {
+    setFixtureModalOpen(false);
+    setEditingFixture(null);
+  };
+
+  const handleCreateFixture = async (data: { name: string; lightIds: string[]; icon?: string; room?: string }) => {
+    if (onFixtureCreate) {
+      const result = await onFixtureCreate(data);
+      return result;
+    }
+    return null;
+  };
+
+  const handleUpdateFixture = async (id: string, data: { name?: string; lightIds?: string[]; icon?: string; room?: string }) => {
+    if (onFixtureUpdate) {
+      const result = await onFixtureUpdate(id, data);
+      return result;
+    }
+    return null;
+  };
 
   // Collapsed view - just show summary
   if (collapsed) {
@@ -111,6 +172,11 @@ export function HomeAssistant({
         {status.connected && devices && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-secondary/50 rounded-lg p-3 text-center">
+              <Layers className={`w-5 h-5 mx-auto mb-1 ${fixturesOn > 0 ? 'text-purple-500' : 'text-muted-foreground'}`} />
+              <p className="text-lg font-bold">{fixturesOn}/{fixtures.length}</p>
+              <p className="text-xs text-muted-foreground">Fixtures On</p>
+            </div>
+            <div className="bg-secondary/50 rounded-lg p-3 text-center">
               <Lightbulb className={`w-5 h-5 mx-auto mb-1 ${lightsOn > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
               <p className="text-lg font-bold">{lightsOn}/{devices.lights.length}</p>
               <p className="text-xs text-muted-foreground">Lights On</p>
@@ -124,11 +190,6 @@ export function HomeAssistant({
               <Thermometer className={`w-5 h-5 mx-auto mb-1 ${climateActive > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
               <p className="text-lg font-bold">{climateActive}/{devices.climate.length}</p>
               <p className="text-xs text-muted-foreground">Climate Active</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-3 text-center">
-              <Music className={`w-5 h-5 mx-auto mb-1 ${mediaPlaying > 0 ? 'text-primary' : 'text-muted-foreground'}`} />
-              <p className="text-lg font-bold">{mediaPlaying}/{devices.media_players.length}</p>
-              <p className="text-xs text-muted-foreground">Playing</p>
             </div>
           </div>
         )}
@@ -176,10 +237,57 @@ export function HomeAssistant({
 
   return (
     <div className="space-y-4">
+      {/* Fixtures Section */}
+      {(fixtures.length > 0 || onFixtureCreate) && (
+        <DeviceSection
+          title="Light Fixtures"
+          icon={<Layers className={`w-5 h-5 ${fixturesOn > 0 ? 'text-purple-500' : 'text-muted-foreground'}`} />}
+          count={fixtures.length}
+          expanded={expandedSections.fixtures}
+          onToggle={() => toggleSection('fixtures')}
+          headerAction={
+            onFixtureCreate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingFixture(null);
+                  setFixtureModalOpen(true);
+                }}
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                title="Create new fixture"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )
+          }
+        >
+          {fixtures.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-muted-foreground">
+              <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No fixtures created yet</p>
+              <p className="text-xs mt-1">Click the + button to group lights into fixtures</p>
+            </div>
+          ) : (
+            fixtures.map(fixture => (
+              <FixtureCard
+                key={fixture.id}
+                fixture={fixture}
+                lights={devices.lights}
+                onToggle={onFixtureToggle || (async () => false)}
+                onBrightness={onFixtureBrightness || (async () => false)}
+                onColorChange={onFixtureColor || (async () => false)}
+                onEdit={onFixtureUpdate ? handleEditFixture : undefined}
+                onDelete={onFixtureDelete}
+              />
+            ))
+          )}
+        </DeviceSection>
+      )}
+
       {/* Lights Section */}
       {devices.lights.length > 0 && (
         <DeviceSection
-          title="Lights"
+          title="Individual Lights"
           icon={<Lightbulb className={`w-5 h-5 ${lightsOn > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />}
           count={devices.lights.length}
           expanded={expandedSections.lights}
@@ -262,7 +370,8 @@ export function HomeAssistant({
       {devices.lights.length === 0 &&
         devices.switches.length === 0 &&
         devices.climate.length === 0 &&
-        devices.media_players.length === 0 && (
+        devices.media_players.length === 0 &&
+        fixtures.length === 0 && (
           <div className="bg-card border border-border rounded-xl p-8 text-center">
             <Home className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">No Devices Found</h2>
@@ -279,6 +388,16 @@ export function HomeAssistant({
             </a>
           </div>
         )}
+
+      {/* Fixture Management Modal */}
+      <FixtureManagement
+        isOpen={fixtureModalOpen}
+        onClose={handleCloseFixtureModal}
+        fixture={editingFixture}
+        availableLights={devices.lights}
+        onCreate={handleCreateFixture}
+        onUpdate={handleUpdateFixture}
+      />
     </div>
   );
 }

@@ -25,13 +25,16 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/jwcollie:/home/jwcollie:rw
+      - /mnt:/mnt:ro
     environment:
       - NODE_ENV=production
       - PORT=8080
       - NEO4J_URI=bolt://localhost:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=dashboard123
-      - GO2RTC_URL=http://go2rtc.blackbox
+      - GO2RTC_URL=http://192.168.50.39:1984
+      - GO2RTC_PUBLIC_URL=http://go2rtc.blackbox
     network_mode: host
     pid: "host"
     privileged: true

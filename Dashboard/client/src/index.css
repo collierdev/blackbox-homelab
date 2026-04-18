@@ -75,6 +75,25 @@
   --color-warning: hsl(var(--warning));
 }
 
+/* Markdown Preview Styles */
+.markdown-preview h1 { font-size: 1.5rem; font-weight: 700; color: #e2e8f0; margin-bottom: 0.75rem; margin-top: 1.25rem; }
+.markdown-preview h2 { font-size: 1.25rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem; margin-top: 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+.markdown-preview h3 { font-size: 1.1rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem; margin-top: 0.75rem; }
+.markdown-preview p { color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.7; }
+.markdown-preview a { color: #22d3ee; text-decoration: underline; }
+.markdown-preview code { background: #0f172a; color: #67e8f9; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.85em; font-family: monospace; }
+.markdown-preview pre { background: #0f172a; border: 1px solid #1e293b; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.75rem; }
+.markdown-preview pre code { background: none; padding: 0; color: #e2e8f0; }
+.markdown-preview ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; color: #94a3b8; }
+.markdown-preview ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; color: #94a3b8; }
+.markdown-preview li { margin-bottom: 0.25rem; }
+.markdown-preview blockquote { border-left: 3px solid #22d3ee; padding-left: 1rem; color: #64748b; margin-bottom: 0.75rem; font-style: italic; }
+.markdown-preview hr { border-color: #334155; margin: 1rem 0; }
+.markdown-preview strong { color: #e2e8f0; font-weight: 600; }
+.markdown-preview table { width: 100%; border-collapse: collapse; margin-bottom: 0.75rem; }
+.markdown-preview th { background: #1e293b; color: #cbd5e1; padding: 0.5rem; text-align: left; border: 1px solid #334155; }
+.markdown-preview td { color: #94a3b8; padding: 0.5rem; border: 1px solid #1e293b; }
+
 /* Custom Range Slider Styles for Color Picker */
 input[type="range"].color-slider {
   -webkit-appearance: none;

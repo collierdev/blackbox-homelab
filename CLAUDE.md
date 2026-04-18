@@ -44,8 +44,8 @@ Custom subagents for specialized tasks. See `~/software-report/CLAUDE_AGENTS.md`
 |---------|------|-----------|------------|
 | Docker | System | - | CLI: `docker` |
 | **Pi Dashboard** | Docker | http://blackbox/ | http://192.168.50.39:8080 |
-| Jellyfin | Docker | http://blackbox/jellyfin | http://192.168.50.39:8096 |
-| n8n | Docker | http://blackbox/n8n | http://192.168.50.39:5678 |
+| **Jellyfin** | Docker | http://jellyfin.blackbox | http://192.168.50.39:8096 |
+| **n8n** | Docker | http://n8n.blackbox | http://192.168.50.39:5678 |
 | Portainer | Docker | http://blackbox/portainer | https://192.168.50.39:9443 |
 | Plex | System | http://plex.blackbox | http://192.168.50.39:32400/web |
 | **Home Assistant** | Docker | http://ha.blackbox | http://192.168.50.39:8123 |
@@ -57,6 +57,8 @@ Custom subagents for specialized tasks. See `~/software-report/CLAUDE_AGENTS.md`
 | **dnsmasq** | System | - | Port 53 (DNS server) |
 | **Samba** | System | `\\blackbox` | `\\192.168.50.39` |
 | **ZFS** | System | - | Pool: `blackbox` at `/blackbox` |
+| **CouchDB** | Docker | https://vault.blackbox | http://192.168.50.39:5984 |
+| **Obsidian** | AppImage | - | `~/obsidian/Obsidian-1.12.7-arm64.AppImage` |
 
 ### nginx Reverse Proxy + Local DNS
 
@@ -65,12 +67,13 @@ Custom subagents for specialized tasks. See `~/software-report/CLAUDE_AGENTS.md`
 The system uses **nginx** as a reverse proxy with **dnsmasq** for local DNS resolution, providing friendly URLs for all services.
 
 **Routing Strategy**:
-- **Path-based**: Pi Dashboard (root), Jellyfin, Portainer, n8n → `http://blackbox/service`
-- **Subdomain**: Plex, Home Assistant, go2rtc → `http://service.blackbox`
+- **Path-based**: Pi Dashboard (root), Portainer → `http://blackbox/service`
+- **Subdomain**: Jellyfin, n8n, Plex, Home Assistant, go2rtc → `http://service.blackbox`
+- **Subdomain (HTTPS)**: CouchDB/LiveSync → `https://vault.blackbox`
 
 **How it works**:
 1. **dnsmasq** (port 53) resolves `*.blackbox` to `192.168.50.39`
-2. **nginx** (port 80) routes requests to backend services
+2. **nginx** (port 80/443) routes requests to backend services
 3. All services remain accessible on original ports as fallback
 
 **Configuration files**:
@@ -158,6 +161,10 @@ testparm                            # Validate smb.conf
 | Ollama models | `/usr/share/ollama/.ollama/models/` |
 | ZFS Pool (blackbox) | `/blackbox/*` |
 | Samba config | `/etc/samba/smb.conf` |
+| CouchDB data | Docker volume: `couchdb_data` |
+| CouchDB config | Docker volume: `couchdb_config` |
+| Obsidian AppImage | `~/obsidian/` |
+| SSL certificates | `/etc/nginx/ssl/` |
 
 ## ZFS Storage (Pool: blackbox)
 

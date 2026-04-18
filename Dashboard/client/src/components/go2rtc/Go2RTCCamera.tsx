@@ -17,8 +17,8 @@ const STREAM_MODES: { mode: StreamMode; label: string; description: string }[] =
 ];
 
 export function Go2RTCCameraCard({ camera, customName, onRename }: Go2RTCCameraProps) {
-  const [quality, setQuality] = useState<StreamQuality>('sd');
-  const [streamMode, setStreamMode] = useState<StreamMode>('webrtc');
+  const [quality, setQuality] = useState<StreamQuality>('hd');
+  const [streamMode, setStreamMode] = useState<StreamMode>('auto');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showControls, setShowControls] = useState(false);

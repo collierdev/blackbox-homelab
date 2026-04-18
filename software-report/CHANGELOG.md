@@ -7,6 +7,180 @@ Use this for troubleshooting or rollback reference.
 
 ---
 
+## April 1, 2026
+
+### CouchDB 3.5.1 (Obsidian LiveSync Backend)
+- **Version**: 3.5.1
+- **Type**: Docker container
+- **Command used**:
+```bash
+sudo docker run -d --name couchdb --restart=always \
+  -p 5984:5984 \
+  -e COUCHDB_USER=admin \
+  -e COUCHDB_PASSWORD=jkloo123 \
+  -v couchdb_data:/opt/couchdb/data \
+  -v couchdb_config:/opt/couchdb/etc/local.d \
+  couchdb:3
+```
+- **Access**: https://vault.blackbox (HTTPS via nginx) or http://192.168.50.39:5984 (direct)
+- **Credentials**: `admin` / `jkloo123`
+- **Database**: `obsidian-livesync` (pre-created)
+- **Configuration applied**:
+  - Single-node setup via `_cluster_setup`
+  - CORS enabled (all origins, credentials allowed)
+  - Max document size: 100MB (for vault attachments)
+  - Max HTTP request size: 100MB
+- **nginx proxy**: `/etc/nginx/sites-available/vault.blackbox` (HTTPS with self-signed cert)
+- **SSL cert**: `/etc/nginx/ssl/vault.blackbox.crt` (10-year self-signed, SAN: vault.blackbox + 192.168.50.39)
+- **Data location**: Docker volumes `couchdb_data`, `couchdb_config`
+- **To remove**:
+```bash
+sudo docker stop couchdb && sudo docker rm couchdb
+sudo docker volume rm couchdb_data couchdb_config
+sudo rm /etc/nginx/sites-enabled/vault.blackbox
+sudo rm /etc/nginx/sites-available/vault.blackbox
+sudo rm /etc/nginx/ssl/vault.blackbox.*
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Obsidian 1.12.7 (Note-Taking App)
+- **Version**: 1.12.7
+- **Type**: AppImage (ARM64)
+- **Command used**:
+```bash
+wget https://github.com/obsidianmd/obsidian-releases/releases/download/v1.12.7/Obsidian-1.12.7-arm64.AppImage
+chmod +x Obsidian-1.12.7-arm64.AppImage
+```
+- **Location**: `~/obsidian/Obsidian-1.12.7-arm64.AppImage`
+- **Note**: Desktop app requiring display. Primary use is on client devices; this is a local copy for Pi desktop access.
+- **LiveSync setup**: Install "Self-hosted LiveSync" plugin in Obsidian, configure:
+  - URI: `https://vault.blackbox`
+  - Username: `admin`
+  - Password: `jkloo123`
+  - Database: `obsidian-livesync`
+  - Accept self-signed certificate when prompted
+- **To remove**:
+```bash
+rm -rf ~/obsidian
+```
+
+---
+
+## February 3, 2026
+
+### [Current Time] Playwright MCP Server (Claude Code Integration)
+- **Version**: Latest (@playwright/mcp)
+- **Type**: NPX package (Microsoft official MCP server)
+- **Command used**:
+```bash
+# Installed via npx (no separate installation needed)
+npx -y @playwright/mcp
+```
+- **Configuration**: Added to `~/.claude/settings.json`
+```json
+"playwright": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp"
+  ]
+}
+```
+- **Purpose**: Browser automation for testing, screenshots, and web interactions
+- **Features**:
+  - Launch and control browser instances (Chromium, Firefox, WebKit)
+  - Navigate to URLs and interact with web pages
+  - Take screenshots and generate PDFs
+  - Execute JavaScript in page context
+  - Fill forms and click elements
+  - Test responsive designs across viewports
+  - Accessibility snapshots for testing
+  - Better than deprecated Puppeteer MCP
+- **Why Playwright**: Microsoft-maintained, actively developed, cross-browser support
+- **Use cases**: E2E testing, dashboard UI testing, web scraping, automation
+- **Restart behavior**: Spawned per session via npx
+- **To remove**:
+```bash
+# Edit ~/.claude/settings.json and remove "playwright" entry
+```
+- **Documentation**: https://github.com/microsoft/playwright-mcp
+
+### [Earlier] Filesystem MCP Server (Claude Code Integration)
+- **Version**: Latest (@modelcontextprotocol/server-filesystem)
+- **Type**: NPX package (official MCP server)
+- **Command used**:
+```bash
+# Installed via npx (no separate installation needed)
+npx -y @modelcontextprotocol/server-filesystem
+```
+- **Configuration**: Added to `~/.claude/settings.json`
+```json
+"filesystem": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "@modelcontextprotocol/server-filesystem",
+    "/home/jwcollie",
+    "/blackbox"
+  ]
+}
+```
+- **Purpose**: Enhanced file operations with security controls and configurable access
+- **Features**:
+  - Secure file read/write operations
+  - Directory traversal with access controls
+  - Scoped to /home/jwcollie and /blackbox (ZFS pool)
+  - File metadata queries
+  - Search and listing capabilities
+  - Better performance than basic Read/Write tools
+- **Scope**: Access limited to home directory and ZFS storage pool for security
+- **Restart behavior**: Spawned per session via npx
+- **To remove**:
+```bash
+# Edit ~/.claude/settings.json and remove "filesystem" entry
+```
+- **Documentation**: https://github.com/modelcontextprotocol/servers
+
+### [Earlier] n8n MCP Server (Claude Code Integration)
+- **Version**: Latest (ghcr.io/czlonkowski/n8n-mcp:latest)
+- **Type**: Docker container (MCP server for Claude Code)
+- **Command used**:
+```bash
+docker pull ghcr.io/czlonkowski/n8n-mcp:latest
+```
+- **Configuration**: Added to `~/.claude/settings.json`
+```json
+"n8n-mcp": {
+  "command": "docker",
+  "args": [
+    "run", "-i", "--rm", "--init",
+    "-e", "MCP_MODE=stdio",
+    "-e", "LOG_LEVEL=error",
+    "-e", "DISABLE_CONSOLE_OUTPUT=true",
+    "-e", "N8N_API_URL=http://192.168.50.39:5678",
+    "-e", "N8N_API_KEY=<redacted>",
+    "ghcr.io/czlonkowski/n8n-mcp:latest"
+  ]
+}
+```
+- **Purpose**: Enables Claude Code to interact with n8n workflows
+- **Features**:
+  - Read and search n8n workflow documentation
+  - Manage workflows via n8n API
+  - Execute workflows from Claude Code
+  - Query workflow status and results
+- **Connected to**: Local n8n instance at http://n8n.blackbox (192.168.50.39:5678)
+- **Image size**: ~280MB (ARM64 compatible)
+- **Restart behavior**: Ephemeral (`--rm` flag, spawned per session)
+- **To remove**:
+```bash
+docker rmi ghcr.io/czlonkowski/n8n-mcp:latest
+# Edit ~/.claude/settings.json and remove "n8n-mcp" entry
+```
+- **Documentation**: https://github.com/czlonkowski/n8n-mcp
+
+---
+
 ## January 19, 2026
 
 ### [Documentation Update] All System Documentation Updated

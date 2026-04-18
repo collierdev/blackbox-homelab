@@ -100,8 +100,8 @@ The Pi Dashboard is accessible through **nginx reverse proxy** with friendly DNS
 - **Direct URL**: http://192.168.50.39:8080 (direct to container)
 
 All services have friendly URLs powered by **dnsmasq** local DNS:
-- Path-based: `http://blackbox/service` (Jellyfin, n8n, Portainer)
-- Subdomain: `http://service.blackbox` (Plex, Home Assistant, go2rtc)
+- Path-based: `http://blackbox/service` (Portainer)
+- Subdomain: `http://service.blackbox` (Jellyfin, n8n, Plex, Home Assistant, go2rtc)
 
 The container runs on port 8080 internally, proxied through nginx on port 80.
 
@@ -111,8 +111,8 @@ The dashboard monitors and controls these services:
 
 | Service | Type | Proxy URL | Direct URL |
 |---------|------|-----------|------------|
-| Jellyfin | Docker | http://blackbox/jellyfin | http://192.168.50.39:8096 |
-| n8n | Docker | http://blackbox/n8n | http://192.168.50.39:5678 |
+| Jellyfin | Docker | http://jellyfin.blackbox | http://192.168.50.39:8096 |
+| n8n | Docker | http://n8n.blackbox | http://192.168.50.39:5678 |
 | Portainer | Docker | http://blackbox/portainer | https://192.168.50.39:9443 |
 | Home Assistant | Docker | http://ha.blackbox | http://192.168.50.39:8123 |
 | Plex | systemd | http://plex.blackbox | http://192.168.50.39:32400/web |

@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Settings, Loader2, X } from 'lucide-react';
+import { Send, Bot, User, Settings, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage, OllamaModel } from '../types';
 
 type Provider = 'ollama' | 'claude';
 
-export function ChatBot() {
+interface ChatBotProps {
+  inline?: boolean;  // When true, renders as inline content instead of floating popup
+}
+
+export function ChatBot({ inline = false }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -61,51 +65,84 @@ export function ChatBot() {
     setLoading(true);
 
     try {
-      const endpoint = provider === 'ollama' ? '/api/chat/ollama' : '/api/chat/claude';
-      const body = provider === 'ollama'
-        ? {
-            model: selectedModel,
-            messages: [...messages, userMessage].map(m => ({
-              role: m.role,
-              content: m.content
-            }))
-          }
-        : {
-            apiKey: claudeApiKey,
-            model: 'claude-sonnet-4-20250514',
-            messages: [...messages, userMessage].map(m => ({
-              role: m.role,
-              content: m.content
-            }))
-          };
+      const allMessages = [...messages, userMessage];
 
-      const res = await fetch(endpoint, {
+      if (provider === 'ollama') {
+        // Add empty placeholder immediately so user sees the bubble appear
+        setMessages(prev => [...prev, { role: 'assistant', content: '', timestamp: new Date() }]);
+
+        const res = await fetch('/api/chat/ollama', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+          }),
+        });
+
+        if (!res.ok || !res.body) throw new Error('Stream failed');
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop()!;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') { setLoading(false); return; }
+            if (data.startsWith('[ERROR]')) {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...updated[updated.length - 1], content: data };
+                return updated;
+              });
+              setLoading(false);
+              return;
+            }
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              updated[updated.length - 1] = { ...last, content: last.content + data };
+              return updated;
+            });
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Claude path — JSON response
+      const res = await fetch('/api/chat/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          apiKey: claudeApiKey,
+          model: 'claude-sonnet-4-20250514',
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to get response');
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to get response');
-      }
-
-      const assistantMessage: ChatMessage = {
+      setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.content,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+        timestamp: new Date(),
+      }]);
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage: ChatMessage = {
+      setMessages(prev => [...prev, {
         role: 'assistant',
         content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+        timestamp: new Date(),
+      }]);
     } finally {
       setLoading(false);
     }
@@ -118,7 +155,9 @@ export function ChatBot() {
     }
   };
 
-  if (!isOpen) {
+  // In inline mode, always show the chat interface
+  // In floating mode, show button when closed
+  if (!inline && !isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
@@ -129,8 +168,12 @@ export function ChatBot() {
     );
   }
 
+  const containerClass = inline
+    ? "h-full bg-card border border-border rounded-2xl flex flex-col overflow-hidden"
+    : "fixed bottom-6 right-6 w-96 h-[600px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden";
+
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className={containerClass}>
       {/* Header */}
       <div className="bg-primary px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -143,12 +186,6 @@ export function ChatBot() {
             className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
           >
             <Settings className="w-5 h-5 text-primary-foreground" />
-          </button>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-primary-foreground" />
           </button>
         </div>
       </div>
