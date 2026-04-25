@@ -121,7 +121,7 @@ router.post('/lights/:entityId/brightness', async (req, res) => {
         res.status(500).json({ error: 'Failed to set brightness' });
     }
 });
-// Set light color
+// Set light color (RGB)
 router.post('/lights/:entityId/color', async (req, res) => {
     try {
         const entityId = req.params.entityId;
@@ -136,6 +136,63 @@ router.post('/lights/:entityId/color', async (req, res) => {
     catch (error) {
         console.error('Error setting color:', error);
         res.status(500).json({ error: 'Failed to set color' });
+    }
+});
+// Set light HS color (Hue/Saturation)
+router.post('/lights/:entityId/hs_color', async (req, res) => {
+    try {
+        const entityId = req.params.entityId;
+        const { hs_color } = req.body;
+        if (!Array.isArray(hs_color) || hs_color.length !== 2) {
+            res.status(400).json({ error: 'hs_color must be an array of 2 numbers [hue, saturation]' });
+            return;
+        }
+        // Validate ranges: hue 0-360, saturation 0-100
+        const [hue, saturation] = hs_color;
+        if (hue < 0 || hue > 360 || saturation < 0 || saturation > 100) {
+            res.status(400).json({ error: 'hue must be 0-360, saturation must be 0-100' });
+            return;
+        }
+        const result = await (0, homeassistant_1.setLightHSColor)(entityId, hs_color);
+        res.json({ success: true, result });
+    }
+    catch (error) {
+        console.error('Error setting HS color:', error);
+        res.status(500).json({ error: 'Failed to set HS color' });
+    }
+});
+// Set light color temperature (Kelvin)
+router.post('/lights/:entityId/color_temp', async (req, res) => {
+    try {
+        const entityId = req.params.entityId;
+        const { kelvin } = req.body;
+        if (typeof kelvin !== 'number' || kelvin < 1000 || kelvin > 10000) {
+            res.status(400).json({ error: 'kelvin must be a number between 1000 and 10000' });
+            return;
+        }
+        const result = await (0, homeassistant_1.setLightColorTemp)(entityId, kelvin);
+        res.json({ success: true, result });
+    }
+    catch (error) {
+        console.error('Error setting color temperature:', error);
+        res.status(500).json({ error: 'Failed to set color temperature' });
+    }
+});
+// Set light effect
+router.post('/lights/:entityId/effect', async (req, res) => {
+    try {
+        const entityId = req.params.entityId;
+        const { effect } = req.body;
+        if (typeof effect !== 'string') {
+            res.status(400).json({ error: 'effect must be a string' });
+            return;
+        }
+        const result = await (0, homeassistant_1.setLightEffect)(entityId, effect);
+        res.json({ success: true, result });
+    }
+    catch (error) {
+        console.error('Error setting effect:', error);
+        res.status(500).json({ error: 'Failed to set effect' });
     }
 });
 // === Climate-specific routes ===

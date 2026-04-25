@@ -62,7 +62,7 @@ export default function DayView({
       .attr('x', innerWidth / 2)
       .attr('y', -20)
       .attr('text-anchor', 'middle')
-      .attr('fill', isToday ? 'rgb(59, 130, 246)' : 'currentColor')
+      .attr('fill', isToday ? '#adc6ff' : '#e2e8f0')
       .attr('font-size', '20px')
       .attr('font-weight', '700')
       .text(format(currentDate, 'EEEE, MMMM d, yyyy'));
@@ -74,9 +74,8 @@ export default function DayView({
         .attr('x', -10)
         .attr('y', hour * hourHeight + 12)
         .attr('text-anchor', 'end')
-        .attr('fill', 'currentColor')
+        .attr('fill', '#8892a4')
         .attr('font-size', '12px')
-        .attr('opacity', 0.7)
         .text(`${hour.toString().padStart(2, '0')}:00`);
 
       // Grid line
@@ -85,9 +84,9 @@ export default function DayView({
         .attr('x2', innerWidth)
         .attr('y1', hour * hourHeight)
         .attr('y2', hour * hourHeight)
-        .attr('stroke', 'currentColor')
-        .attr('stroke-width', hour === 0 ? 2 : 0.5)
-        .attr('opacity', hour === 0 ? 0.3 : 0.1);
+        .attr('stroke', '#243356')
+        .attr('stroke-width', hour === 0 ? 1.5 : 0.5)
+        .attr('opacity', 1);
 
       // Half-hour line
       if (hour < 23) {
@@ -96,9 +95,9 @@ export default function DayView({
           .attr('x2', innerWidth)
           .attr('y1', hour * hourHeight + hourHeight / 2)
           .attr('y2', hour * hourHeight + hourHeight / 2)
-          .attr('stroke', 'currentColor')
+          .attr('stroke', '#1c2a4a')
           .attr('stroke-width', 0.5)
-          .attr('opacity', 0.05);
+          .attr('opacity', 1);
       }
     });
 
@@ -253,7 +252,7 @@ export default function DayView({
         ref={svgRef}
         width={dimensions.width}
         height={Math.max(dimensions.height, 1200)}
-        className="text-gray-900 dark:text-white"
+        style={{ background: '#0f1a2e' }}
       />
     </div>
   );

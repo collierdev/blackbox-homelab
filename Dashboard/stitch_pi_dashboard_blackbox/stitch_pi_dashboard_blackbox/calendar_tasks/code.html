@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Calendar &amp; Tasks - Intelligence Console</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#adc6ff",
+                      "on-primary": "#002e6a",
+                      "background": "#0b1326",
+                      "on-tertiary-container": "#372700",
+                      "on-primary-fixed": "#001a42",
+                      "on-tertiary-fixed": "#251a00",
+                      "inverse-surface": "#dae2fd",
+                      "secondary-container": "#3c4a5e",
+                      "surface-container-high": "#222a3d",
+                      "tertiary-fixed-dim": "#f7be1d",
+                      "surface-container-lowest": "#060e20",
+                      "error-container": "#93000a",
+                      "surface-container-highest": "#2d3449",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-error": "#690005",
+                      "on-surface": "#dae2fd",
+                      "surface-bright": "#31394d",
+                      "primary-fixed": "#d8e2ff",
+                      "tertiary-container": "#b68a00",
+                      "secondary-fixed-dim": "#b9c7e0",
+                      "surface-dim": "#0b1326",
+                      "on-tertiary-fixed-variant": "#5a4300",
+                      "surface-variant": "#2d3449",
+                      "primary-container": "#4d8eff",
+                      "secondary-fixed": "#d5e3fd",
+                      "tertiary-fixed": "#ffdf9a",
+                      "outline-variant": "#424754",
+                      "primary": "#adc6ff",
+                      "outline": "#8c909f",
+                      "inverse-on-surface": "#283044",
+                      "on-secondary-fixed-variant": "#3a485c",
+                      "on-secondary": "#233144",
+                      "secondary": "#b9c7e0",
+                      "on-tertiary": "#3f2e00",
+                      "primary-fixed-dim": "#adc6ff",
+                      "error": "#ffb4ab",
+                      "surface-container": "#171f33",
+                      "on-error-container": "#ffdad6",
+                      "inverse-primary": "#005ac2",
+                      "on-secondary-fixed": "#0d1c2f",
+                      "on-surface-variant": "#c2c6d6",
+                      "on-background": "#dae2fd",
+                      "tertiary": "#f7be1d",
+                      "on-secondary-container": "#abb9d2",
+                      "on-primary-container": "#00285d",
+                      "surface-container-low": "#131b2e",
+                      "surface": "#0b1326"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen overflow-x-hidden selection:bg-primary/30 selection:text-primary">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0b1326] shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+<div class="flex items-center gap-4">
+<span class="text-lg font-black tracking-tighter text-[#adc6ff] font-headline uppercase">INTELLIGENCE CONSOLE</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-[#adc6ff] transition-colors duration-300">
+<span class="material-symbols-outlined text-xl">sensors</span>
+</button>
+<button class="text-slate-400 hover:text-[#adc6ff] transition-colors duration-300">
+<span class="material-symbols-outlined text-xl">dark_mode</span>
+</button>
+<button class="text-slate-400 hover:text-[#adc6ff] transition-colors duration-300">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full z-40 pt-16 flex flex-col docked left-0 w-64 border-r border-white/5 bg-[#0b1326] shadow-2xl shadow-black/50 hidden md:flex">
+<div class="p-6 border-b border-white/5 mb-4 bg-surface-container-low/50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center relative overflow-hidden">
+<img alt="System Status Indicator" class="w-full h-full object-cover" data-alt="Abstract glowing blue and black neon rings representing artificial intelligence core system" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCE6M-bUteQVrT8t80lM_y_EtEvhsu3kZP1V-4pBDG5DTYt2NIZ71UnNHPdIMZssIQJROglC6x8tzlPV2lIKW1hyUUyTojkkaOFZB9a9eaRHZRYSmJGlITjqJn2CbX3v9uw3c82a7O4org0PZM2zs6cr7wxw4KNlAFNxa-dTo-aeZEgbTK34ZBf6zpWFDwug1DmJXkNtismZ52d_-VZVONnhnKll9cdw2IHywEzeSs8V4u5S-RZqgf6T_xmjtT0KaDgIjXOoCirGQk"/>
+<div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-tertiary rounded-full border border-background shadow-[0_0_8px_rgba(247,190,29,0.5)]"></div>
+</div>
+<div>
+<h2 class="text-[#adc6ff] font-bold font-headline text-sm tracking-widest uppercase">NODE-01</h2>
+<p class="text-slate-500 text-[10px] tracking-widest font-label mt-0.5">ONLINE / 192.168.1.45</p>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-2">
+<a class="text-slate-500 flex items-center px-4 py-3 mb-1 hover:bg-[#161e2d] hover:text-slate-200 transition-all font-['Inter'] font-medium text-[12px] tracking-normal" href="#">
+<span class="material-symbols-outlined mr-3 text-lg opacity-70">memory</span>
+                System
+            </a>
+<a class="text-slate-500 flex items-center px-4 py-3 mb-1 hover:bg-[#161e2d] hover:text-slate-200 transition-all font-['Inter'] font-medium text-[12px] tracking-normal" href="#">
+<span class="material-symbols-outlined mr-3 text-lg opacity-70">home</span>
+                Smart Home
+            </a>
+<a class="bg-[#161e2d] text-[#adc6ff] border-l-2 border-[#adc6ff] flex items-center px-4 py-3 mb-1 font-['Inter'] font-medium text-[12px] tracking-normal Active: scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+                Calendar
+            </a>
+<a class="text-slate-500 flex items-center px-4 py-3 mb-1 hover:bg-[#161e2d] hover:text-slate-200 transition-all font-['Inter'] font-medium text-[12px] tracking-normal" href="#">
+<span class="material-symbols-outlined mr-3 text-lg opacity-70">task</span>
+                Planner
+            </a>
+<a class="text-slate-500 flex items-center px-4 py-3 mb-1 hover:bg-[#161e2d] hover:text-slate-200 transition-all font-['Inter'] font-medium text-[12px] tracking-normal" href="#">
+<span class="material-symbols-outlined mr-3 text-lg opacity-70">code</span>
+                Editor
+            </a>
+<a class="text-slate-500 flex items-center px-4 py-3 mb-1 hover:bg-[#161e2d] hover:text-slate-200 transition-all font-['Inter'] font-medium text-[12px] tracking-normal" href="#">
+<span class="material-symbols-outlined mr-3 text-lg opacity-70">smart_toy</span>
+                AI Chat
+            </a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-16 md:pl-64 min-h-screen flex flex-col bg-surface-container-lowest">
+<!-- Header Section -->
+<div class="px-8 py-8 border-b border-outline-variant/10 bg-surface flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h1 class="font-headline text-3xl font-bold text-on-surface mb-2">Calendar &amp; Tasks</h1>
+<p class="text-on-surface-variant text-sm font-body">Manage schedules and system tasks across all nodes.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high rounded-full p-1 flex items-center shadow-lg shadow-black/20">
+<button class="px-6 py-2 rounded-full bg-surface-bright text-primary text-sm font-medium transition-all shadow-md">Calendar</button>
+<button class="px-6 py-2 rounded-full text-on-surface-variant hover:text-on-surface text-sm font-medium transition-all">Tasks</button>
+</div>
+<button class="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-[0_0_15px_rgba(173,198,255,0.1)]">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Event
+                </button>
+</div>
+</div>
+<!-- Calendar Toolbar -->
+<div class="px-8 py-4 flex flex-wrap justify-between items-center gap-4 bg-surface-container-low border-b border-outline-variant/10">
+<div class="flex items-center gap-4">
+<button class="px-4 py-1.5 border border-outline-variant/30 rounded text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">Today</button>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-1 hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-1 hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<h2 class="text-lg font-headline font-semibold text-on-surface ml-2">April 2026</h2>
+</div>
+<div class="flex items-center gap-2 bg-surface p-1 rounded-lg border border-outline-variant/20">
+<button class="px-3 py-1 bg-surface-container-high text-primary text-xs font-medium rounded shadow-sm">Month</button>
+<button class="px-3 py-1 text-on-surface-variant hover:text-on-surface text-xs font-medium rounded transition-colors">Week</button>
+<button class="px-3 py-1 text-on-surface-variant hover:text-on-surface text-xs font-medium rounded transition-colors">Day</button>
+</div>
+</div>
+<!-- Calendar Grid -->
+<div class="flex-1 p-8 bg-surface-container-lowest overflow-hidden flex flex-col">
+<div class="grid grid-cols-7 gap-px bg-outline-variant/20 rounded-xl overflow-hidden shadow-2xl flex-1">
+<!-- Day Headers -->
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Sun</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Mon</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Tue</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Wed</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Thu</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Fri</div>
+<div class="bg-surface-container-low py-3 px-4 text-xs font-label text-on-surface-variant uppercase tracking-wider text-center">Sat</div>
+<!-- Grid Cells (Sample Week) -->
+<!-- Prev Month -->
+<div class="bg-surface/50 min-h-[120px] p-2 opacity-50"><span class="text-xs text-on-surface-variant font-medium p-1">29</span></div>
+<div class="bg-surface/50 min-h-[120px] p-2 opacity-50"><span class="text-xs text-on-surface-variant font-medium p-1">30</span></div>
+<div class="bg-surface/50 min-h-[120px] p-2 opacity-50"><span class="text-xs text-on-surface-variant font-medium p-1">31</span></div>
+<!-- Current Month -->
+<div class="bg-surface min-h-[120px] p-2 hover:bg-surface-container-low transition-colors group relative">
+<span class="text-xs text-on-surface-variant font-medium p-1">1</span>
+<div class="mt-1 flex flex-col gap-1">
+<div class="px-2 py-1 text-[10px] bg-tertiary/10 text-tertiary border border-tertiary/20 rounded truncate">System Maintenance</div>
+</div>
+</div>
+<div class="bg-surface-container-high min-h-[120px] p-2 relative ring-1 ring-inset ring-primary">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center mb-1 shadow-[0_0_10px_rgba(173,198,255,0.4)]">2</span>
+<div class="mt-1 flex flex-col gap-1">
+<div class="px-2 py-1 text-[10px] bg-primary/10 text-primary border border-primary/20 rounded truncate flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Review Logs
+                        </div>
+<div class="px-2 py-1 text-[10px] bg-secondary-container text-on-surface border border-outline-variant/30 rounded truncate">Node Update</div>
+</div>
+</div>
+<div class="bg-surface min-h-[120px] p-2 hover:bg-surface-container-low transition-colors"><span class="text-xs text-on-surface-variant font-medium p-1">3</span></div>
+<div class="bg-surface min-h-[120px] p-2 hover:bg-surface-container-low transition-colors"><span class="text-xs text-on-surface-variant font-medium p-1">4</span></div>
+</div>
+</div>
+</main>
+</body></html>

@@ -60,7 +60,7 @@ export default function CircularView({
       .attr('x', centerX)
       .attr('y', 40)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'currentColor')
+      .attr('fill', '#e2e8f0')
       .attr('font-size', '24px')
       .attr('font-weight', '700')
       .text(format(currentDate, 'yyyy'));
@@ -104,7 +104,7 @@ export default function CircularView({
         .attr('y', labelY)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .attr('fill', 'currentColor')
+        .attr('fill', '#c2c6d6')
         .attr('font-size', '12px')
         .attr('font-weight', '600')
         .text(format(new Date(currentDate.getFullYear(), month, 1), 'MMM'));
@@ -137,9 +137,9 @@ export default function CircularView({
         .attr('cy', y)
         .attr('r', isToday ? 5 : dayEvents.length > 0 ? 4 : 2)
         .attr('fill', () => {
-          if (isToday) return 'rgb(239, 68, 68)';
-          if (dayEvents.length > 0) return dayEvents[0].color || '#3b82f6';
-          return 'rgba(0, 0, 0, 0.2)';
+          if (isToday) return '#ffb4ab';
+          if (dayEvents.length > 0) return dayEvents[0].color || '#adc6ff';
+          return '#243356';
         })
         .attr('opacity', dayEvents.length > 0 ? 1 : 0.4);
 
@@ -174,9 +174,9 @@ export default function CircularView({
         .attr('y1', centerY)
         .attr('x2', centerX + lineEnd * Math.cos(angle))
         .attr('y2', centerY + lineEnd * Math.sin(angle))
-        .attr('stroke', 'rgb(239, 68, 68)')
+        .attr('stroke', '#ffb4ab')
         .attr('stroke-width', 2)
-        .attr('opacity', 0.5);
+        .attr('opacity', 0.7);
     }
 
     // Center info
@@ -189,7 +189,7 @@ export default function CircularView({
       .attr('x', centerX)
       .attr('y', centerY - 10)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'currentColor')
+      .attr('fill', '#e2e8f0')
       .attr('font-size', '36px')
       .attr('font-weight', '700')
       .text(totalEvents);
@@ -198,9 +198,8 @@ export default function CircularView({
       .attr('x', centerX)
       .attr('y', centerY + 15)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'currentColor')
+      .attr('fill', '#8892a4')
       .attr('font-size', '14px')
-      .attr('opacity', 0.6)
       .text(`event${totalEvents !== 1 ? 's' : ''} this year`);
 
   }, [dimensions, currentDate, events, onEventClick, onEventDoubleClick, onNewEvent]);
@@ -211,7 +210,7 @@ export default function CircularView({
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
-        className="text-gray-900 dark:text-white"
+        style={{ background: '#0f1a2e' }}
       />
     </div>
   );

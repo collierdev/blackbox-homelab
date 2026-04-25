@@ -2,7 +2,7 @@
 // go2rtc configuration
 // go2rtc provides RTSP to WebRTC/MSE/HLS streaming for cameras
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GO2RTC_URL = exports.CAMERAS = void 0;
+exports.GO2RTC_PROXY_PREFIX = exports.GO2RTC_URL = exports.CAMERAS = void 0;
 exports.getWebRTCPageUrl = getWebRTCPageUrl;
 exports.getStreamPageUrl = getStreamPageUrl;
 exports.getMSEStreamUrl = getMSEStreamUrl;
@@ -42,35 +42,39 @@ exports.CAMERAS = [
     },
     {
         id: 'camera5',
-        name: 'Camera 3',
+        name: 'Camera 5',
         ip: '192.168.50.114',
         streamHD: 'camera5_hd',
         streamSD: 'camera5_sd'
     }
 ];
 // go2rtc server configuration
+// GO2RTC_URL: Used by backend to make API calls and proxy to go2rtc
 exports.GO2RTC_URL = process.env.GO2RTC_URL || 'http://192.168.50.39:1984';
-// Stream URL builders - iframe-friendly pages (preferred)
+// Public prefix: all go2rtc URLs are proxied through the dashboard server
+// Frontend uses relative paths so it works on any network (LAN, Tailscale, etc.)
+exports.GO2RTC_PROXY_PREFIX = '/go2rtc';
+// Stream URL builders - iframe-friendly pages (proxied through dashboard)
 function getWebRTCPageUrl(streamName) {
-    return `${exports.GO2RTC_URL}/webrtc.html?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/webrtc.html?src=${streamName}`;
 }
 function getStreamPageUrl(streamName) {
-    return `${exports.GO2RTC_URL}/stream.html?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/stream.html?src=${streamName}`;
 }
-// Stream URL builders - API endpoints
+// Stream URL builders - API endpoints (proxied through dashboard)
 function getMSEStreamUrl(streamName) {
-    return `${exports.GO2RTC_URL}/api/ws?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/api/ws?src=${streamName}`;
 }
 function getWebRTCUrl(streamName) {
-    return `${exports.GO2RTC_URL}/api/webrtc?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/api/webrtc?src=${streamName}`;
 }
 function getHLSUrl(streamName) {
-    return `${exports.GO2RTC_URL}/api/stream.m3u8?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/api/stream.m3u8?src=${streamName}`;
 }
 function getMJPEGUrl(streamName) {
-    return `${exports.GO2RTC_URL}/api/stream.mjpeg?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/api/stream.mjpeg?src=${streamName}`;
 }
 function getSnapshotUrl(streamName) {
-    return `${exports.GO2RTC_URL}/api/frame.jpeg?src=${streamName}`;
+    return `${exports.GO2RTC_PROXY_PREFIX}/api/frame.jpeg?src=${streamName}`;
 }
 //# sourceMappingURL=go2rtc.js.map

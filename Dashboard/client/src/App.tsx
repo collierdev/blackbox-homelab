@@ -1,95 +1,54 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Home, CalendarDays, Bot, Monitor, FolderOpen } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { Cpu, Home, CalendarDays, Bot, Clipboard, FolderOpen, Moon, Search, Radio, Server, Settings, User } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
-import { Header } from './components/Header';
 import { SystemStats } from './components/SystemStats';
-import { Services } from './components/Services';
 import { ChatBot } from './components/ChatBot';
 import { NotificationPopup } from './components/NotificationPopup';
 import { HomeAssistant } from './components/HomeAssistant';
-import { CamerasSection } from './components/go2rtc/CamerasSection';
-import { DraggableSection } from './components/DraggableSection';
 import { useSocket } from './hooks/useSocket';
 import CalendarTodoView from './components/CalendarTodoView';
 import { DayPlanner } from './components/DayPlanner';
 import { VaultEditor } from './components/VaultEditor';
 import { DisplayPage } from './components/DisplayPage';
+import { SettingsModal, loadSettings } from './components/SettingsModal';
 
 type Tab = 'dashboard' | 'smarthome' | 'calendar' | 'chat' | 'planner' | 'vault';
 
-// Section IDs for drag-and-drop
-type SectionId = 'system-overview' | 'cameras' | 'services' | 'smart-home';
+interface NavItem {
+  id: Tab;
+  label: string;
+  icon: React.ReactNode;
+}
 
-// Default section order (Security Cameras ABOVE Services as requested)
-const DEFAULT_SECTION_ORDER: SectionId[] = [
-  'system-overview',
-  'cameras',
-  'services',
-  'smart-home',
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'System', icon: <Cpu className="w-5 h-5" /> },
+  { id: 'smarthome', label: 'Smart Home', icon: <Home className="w-5 h-5" /> },
+  { id: 'calendar', label: 'Calendar', icon: <CalendarDays className="w-5 h-5" /> },
+  { id: 'chat', label: 'AI Chat', icon: <Bot className="w-5 h-5" /> },
+  { id: 'planner', label: 'Planner', icon: <Clipboard className="w-5 h-5" /> },
+  { id: 'vault', label: 'Vault', icon: <FolderOpen className="w-5 h-5" /> },
 ];
 
-const STORAGE_KEY = 'pi-dashboard-section-order';
-
-interface TabButtonProps {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}
-
-function TabButton({ active, onClick, icon, label }: TabButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
-        active
-          ? 'border-primary text-primary'
-          : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-      }`}
-    >
-      {icon}
-      <span className="font-medium">{label}</span>
-    </button>
-  );
-}
-
 function Dashboard() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [sectionOrder, setSectionOrder] = useState<SectionId[]>(() => {
-    // Load order from localStorage or use default
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate that all sections exist
-        if (Array.isArray(parsed) && parsed.length === DEFAULT_SECTION_ORDER.length) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load section order:', e);
-    }
-    return DEFAULT_SECTION_ORDER;
-  });
+  const savedSettings = loadSettings();
+  const [activeTab, setActiveTab] = useState<Tab>((savedSettings.defaultTab as Tab) || 'dashboard');
+  const [currentTime, setCurrentTime] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nodeName, setNodeName] = useState<string>(savedSettings.nodeName || 'NODE-01');
+
+  // React to settings saves without reload
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.nodeName) setNodeName(detail.nodeName);
+      if (detail?.defaultTab) setActiveTab(detail.defaultTab as Tab);
+    };
+    window.addEventListener('pi-settings-saved', handler);
+    return () => window.removeEventListener('pi-settings-saved', handler);
+  }, []);
 
   const {
     stats,
-    connected,
     haDevices,
     haStatus,
     toggleEntity,
@@ -98,7 +57,6 @@ function Dashboard() {
     setClimateTemperature,
     mediaPlayerAction,
     setMediaVolume,
-    // Light Fixtures
     lightFixtures,
     createFixture,
     updateFixture,
@@ -106,7 +64,6 @@ function Dashboard() {
     toggleFixture,
     setFixtureBrightness,
     setFixtureColor,
-    // Notifications
     notifications,
     unreadNotificationCount,
     markNotificationAsRead,
@@ -115,216 +72,229 @@ function Dashboard() {
     dismissAllNotifications
   } = useSocket();
 
-  // Save section order to localStorage whenever it changes
+  // Clock
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sectionOrder));
-    } catch (e) {
-      console.error('Failed to save section order:', e);
-    }
-  }, [sectionOrder]);
+    const tick = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  // Configure drag-and-drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const ipAddress = stats?.network?.interfaces?.[0]?.ip4 || '192.168.50.39';
 
-  // Handle drag end event
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setSectionOrder((items) => {
-        const oldIndex = items.indexOf(active.id as SectionId);
-        const newIndex = items.indexOf(over.id as SectionId);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  // Section component mapping
-  const renderSection = (sectionId: SectionId) => {
-    switch (sectionId) {
-      case 'system-overview':
-        return (
-          <DraggableSection id={sectionId} key={sectionId}>
-            <h2 className="text-xl font-bold text-foreground mb-4">System Overview</h2>
-            <SystemStats stats={stats} />
-          </DraggableSection>
-        );
-
-      case 'cameras':
-        return (
-          <DraggableSection id={sectionId} key={sectionId}>
-            <CamerasSection defaultExpanded={true} />
-          </DraggableSection>
-        );
-
-      case 'services':
-        return (
-          <DraggableSection id={sectionId} key={sectionId}>
-            <Services />
-          </DraggableSection>
-        );
-
-      case 'smart-home':
-        return (
-          <DraggableSection id={sectionId} key={sectionId}>
-            <HomeAssistant
-              devices={haDevices}
-              status={haStatus}
-              collapsed
-              onToggle={toggleEntity}
-              onLightBrightness={setLightBrightness}
-              onLightColor={setLightColor}
-              onClimateTemperature={setClimateTemperature}
-              onMediaAction={mediaPlayerAction}
-              onMediaVolume={setMediaVolume}
-              fixtures={lightFixtures}
-              onFixtureToggle={toggleFixture}
-              onFixtureBrightness={setFixtureBrightness}
-              onFixtureColor={setFixtureColor}
-              onFixtureCreate={createFixture}
-              onFixtureUpdate={updateFixture}
-              onFixtureDelete={deleteFixture}
-            />
-          </DraggableSection>
-        );
-
-      default:
-        return null;
-    }
-  };
+  const totalDeviceCount =
+    (haDevices?.lights?.length || 0) +
+    (haDevices?.switches?.length || 0) +
+    (haDevices?.climate?.length || 0) +
+    (haDevices?.media_players?.length || 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header hostname={stats?.hostname || ''} connected={connected} />
+    <div className="h-screen bg-surface text-on-surface flex overflow-hidden">
+      {/* Sidebar — 64px icon-only */}
+      <aside
+        className="w-16 flex-shrink-0 flex flex-col items-center py-4 gap-1"
+        style={{ background: '#0f1a2e' }}
+      >
+        {/* Logo */}
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+          style={{ background: 'rgba(173,198,255,0.10)' }}
+        >
+          <Radio className="w-5 h-5 text-primary" />
+        </div>
 
-      {/* Tab Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-6">
-          <div className="flex gap-2">
-            <TabButton
-              active={activeTab === 'dashboard'}
-              onClick={() => setActiveTab('dashboard')}
-              icon={<LayoutDashboard className="w-4 h-4" />}
-              label="System"
-            />
-            <TabButton
-              active={activeTab === 'smarthome'}
-              onClick={() => setActiveTab('smarthome')}
-              icon={<Home className="w-4 h-4" />}
-              label="Smart Home"
-            />
-            <TabButton
-              active={activeTab === 'calendar'}
-              onClick={() => setActiveTab('calendar')}
-              icon={<CalendarDays className="w-4 h-4" />}
-              label="Calendar & Tasks"
-            />
-            <TabButton
-              active={activeTab === 'chat'}
-              onClick={() => setActiveTab('chat')}
-              icon={<Bot className="w-4 h-4" />}
-              label="AI Chat"
-            />
-            <TabButton
-              active={activeTab === 'planner'}
-              onClick={() => setActiveTab('planner')}
-              icon={<Monitor className="w-4 h-4" />}
-              label="Day Planner"
-            />
-            <TabButton
-              active={activeTab === 'vault'}
-              onClick={() => setActiveTab('vault')}
-              icon={<FolderOpen className="w-4 h-4" />}
-              label="Vault"
-            />
+        {/* Nav items — icon only */}
+        {NAV_ITEMS.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            title={item.label}
+            className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+            style={
+              activeTab === item.id
+                ? { background: '#1c2a4a', color: '#adc6ff' }
+                : { color: '#8892a4' }
+            }
+            onMouseEnter={e => {
+              if (activeTab !== item.id) {
+                (e.currentTarget as HTMLElement).style.color = '#e2e8f0';
+                (e.currentTarget as HTMLElement).style.background = '#162040';
+              }
+            }}
+            onMouseLeave={e => {
+              if (activeTab !== item.id) {
+                (e.currentTarget as HTMLElement).style.color = '#8892a4';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }
+            }}
+          >
+            {item.icon}
+            {activeTab === item.id && (
+              <div
+                className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r"
+                style={{ width: '3px', height: '20px', background: '#adc6ff' }}
+              />
+            )}
+          </button>
+        ))}
+
+        {/* Bottom: settings + avatar */}
+        <div className="mt-auto flex flex-col items-center gap-3">
+          <button
+            title="Settings"
+            onClick={() => setSettingsOpen(true)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+            style={{ color: '#8892a4' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.color = '#e2e8f0';
+              (e.currentTarget as HTMLElement).style.background = '#162040';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.color = '#8892a4';
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: '#1c2a4a' }}
+          >
+            <User className="w-4 h-4" style={{ color: '#8892a4' }} />
           </div>
         </div>
-      </nav>
+      </aside>
 
-      <main className={
-        activeTab === 'planner'
-          ? 'h-[calc(100vh-64px)] overflow-hidden p-0'
-          : activeTab === 'vault'
-          ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)]'
-          : activeTab === 'calendar' || activeTab === 'chat'
-          ? 'container mx-auto px-4 py-4 h-[calc(100vh-120px)] flex flex-col'
-          : 'container mx-auto px-6 py-6 space-y-8'
-      }>
-        {activeTab === 'dashboard' ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={sectionOrder}
-              strategy={verticalListSortingStrategy}
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header — 48px */}
+        <header
+          className="flex-shrink-0 flex items-center px-5 gap-3"
+          style={{ height: '48px', background: '#0f1a2e' }}
+        >
+          {/* Node info */}
+          <div className="flex items-center gap-2.5">
+            <div
+              className="relative w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: '#162040' }}
             >
-              {sectionOrder.map((sectionId) => renderSection(sectionId))}
-            </SortableContext>
-          </DndContext>
-        ) : activeTab === 'smarthome' ? (
-          <section>
-            <h2 className="text-xl font-bold text-foreground mb-4">Smart Home Control</h2>
-            <HomeAssistant
-              devices={haDevices}
-              status={haStatus}
-              onToggle={toggleEntity}
-              onLightBrightness={setLightBrightness}
-              onLightColor={setLightColor}
-              onClimateTemperature={setClimateTemperature}
-              onMediaAction={mediaPlayerAction}
-              onMediaVolume={setMediaVolume}
-              fixtures={lightFixtures}
-              onFixtureToggle={toggleFixture}
-              onFixtureBrightness={setFixtureBrightness}
-              onFixtureColor={setFixtureColor}
-              onFixtureCreate={createFixture}
-              onFixtureUpdate={updateFixture}
-              onFixtureDelete={deleteFixture}
-            />
-          </section>
-        ) : activeTab === 'calendar' ? (
-          <div className="h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
-            <CalendarTodoView />
+              <Server className="w-4 h-4 text-success" />
+              <span
+                className="absolute rounded-full border-2"
+                style={{
+                  bottom: '-2px',
+                  right: '-2px',
+                  width: '8px',
+                  height: '8px',
+                  background: '#22c55e',
+                  borderColor: '#0f1a2e',
+                }}
+              />
+            </div>
+            <div>
+              <div className="text-sm font-bold leading-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{nodeName}</div>
+              <div className="leading-tight" style={{ fontSize: '10px', color: '#22c55e' }}>
+                ONLINE / {ipAddress}
+              </div>
+            </div>
           </div>
-        ) : activeTab === 'chat' ? (
-          <div className="h-full max-w-4xl mx-auto">
-            <ChatBot inline />
-          </div>
-        ) : activeTab === 'planner' ? (
-          <DayPlanner />
-        ) : (
-          <div className="h-full">
-            <VaultEditor />
-          </div>
-        )}
-      </main>
 
-      <NotificationPopup
-        notifications={notifications}
-        unreadCount={unreadNotificationCount}
-        onMarkAsRead={markNotificationAsRead}
-        onMarkAllAsRead={markAllNotificationsAsRead}
-        onDismiss={dismissNotification}
-        onDismissAll={dismissAllNotifications}
-        onNavigateToEvent={(eventId) => {
-          setActiveTab('calendar');
-          // TODO: Add event selection logic
-          console.log('Navigate to event:', eventId);
-        }}
-        onNavigateToTask={(taskId) => {
-          setActiveTab('calendar');
-          // TODO: Add task selection logic
-          console.log('Navigate to task:', taskId);
-        }}
-      />
+          {/* Search bar */}
+          <div className="flex-1 max-w-xs">
+            <div
+              className="rounded-lg px-3.5 py-1.5 flex items-center gap-2"
+              style={{ background: '#162040' }}
+            >
+              <Search className="w-3.5 h-3.5" style={{ color: '#8892a4' }} />
+              <span className="text-sm" style={{ color: '#8892a4' }}>Search commands, files…</span>
+              <span
+                className="ml-auto rounded px-1.5 py-0.5"
+                style={{ fontSize: '11px', color: '#8892a4', background: '#1c2a4a' }}
+              >
+                ⌘K
+              </span>
+            </div>
+          </div>
+
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-4">
+            <span className="text-sm" style={{ color: '#8892a4' }}>{currentTime}</span>
+            <Radio className="w-4 h-4" style={{ color: '#8892a4' }} />
+            <Moon className="w-4 h-4" style={{ color: '#8892a4' }} />
+            <div className="relative">
+              <NotificationPopup
+                mode="inline"
+                notifications={notifications}
+                unreadCount={unreadNotificationCount}
+                onMarkAsRead={markNotificationAsRead}
+                onMarkAllAsRead={markAllNotificationsAsRead}
+                onDismiss={dismissNotification}
+                onDismissAll={dismissAllNotifications}
+                onNavigateToEvent={(eventId) => {
+                  setActiveTab('calendar');
+                  console.log('Navigate to event:', eventId);
+                }}
+                onNavigateToTask={(taskId) => {
+                  setActiveTab('calendar');
+                  console.log('Navigate to task:', taskId);
+                }}
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-hidden flex flex-col">
+          {activeTab === 'dashboard' ? (
+            <SystemStats stats={stats} haDevices={haDevices} haStatus={haStatus} />
+          ) : activeTab === 'smarthome' ? (
+            <div className="h-full overflow-y-auto" style={{ padding: '28px 32px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '24px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '4px', color: '#e2e8f0' }}>Environment Control</h1>
+                <div style={{ fontSize: '12px', color: '#8892a4', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Managing {totalDeviceCount} Active Devices
+                </div>
+              </div>
+              <HomeAssistant
+                devices={haDevices}
+                status={haStatus}
+                onToggle={toggleEntity}
+                onLightBrightness={setLightBrightness}
+                onLightColor={setLightColor}
+                onClimateTemperature={setClimateTemperature}
+                onMediaAction={mediaPlayerAction}
+                onMediaVolume={setMediaVolume}
+                fixtures={lightFixtures}
+                onFixtureToggle={toggleFixture}
+                onFixtureBrightness={setFixtureBrightness}
+                onFixtureColor={setFixtureColor}
+                onFixtureCreate={createFixture}
+                onFixtureUpdate={updateFixture}
+                onFixtureDelete={deleteFixture}
+              />
+            </div>
+          ) : activeTab === 'calendar' ? (
+            <div className="flex-1 overflow-hidden flex flex-col m-4 rounded-xl" style={{ background: '#162040' }}>
+              <CalendarTodoView />
+            </div>
+          ) : activeTab === 'chat' ? (
+            <div className="flex-1 overflow-hidden m-4">
+              <ChatBot inline />
+            </div>
+          ) : activeTab === 'planner' ? (
+            <DayPlanner />
+          ) : (
+            <div className="flex-1 overflow-hidden">
+              <VaultEditor />
+            </div>
+          )}
+        </main>
+      </div>
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

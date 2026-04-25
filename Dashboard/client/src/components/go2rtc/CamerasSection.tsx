@@ -64,67 +64,51 @@ export function CamerasSection({ defaultExpanded = true }: CamerasSectionProps) 
     });
   }, []);
 
-  const onlineCameras = cameras.filter(c => c.available).length;
-
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div style={{ padding: '0' }}>
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-secondary/50 transition-colors"
+        className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
+        style={{ marginBottom: expanded ? '16px' : 0 }}
       >
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${onlineCameras > 0 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-            <Camera className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <h2 className="font-semibold">Security Cameras</h2>
-            <p className="text-xs text-muted-foreground">
-              {onlineCameras} of {cameras.length} cameras online
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <Camera style={{ width: '16px', height: '16px', color: '#adc6ff' }} />
+          <span style={{ fontSize: '12px', letterSpacing: '0.08em', color: '#8892a4', textTransform: 'uppercase', fontWeight: 500 }}>Security Feeds</span>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchCameras();
-            }}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            onClick={(e) => { e.stopPropagation(); fetchCameras(); }}
+            className="p-1 rounded hover:bg-white/10 transition-colors"
             title="Refresh cameras"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} style={{ color: '#8892a4' }} />
           </button>
-          {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          {expanded ? <ChevronUp className="w-4 h-4" style={{ color: '#8892a4' }} /> : <ChevronDown className="w-4 h-4" style={{ color: '#8892a4' }} />}
         </div>
       </button>
 
       {/* Camera grid */}
       {expanded && (
-        <div className="p-4 pt-0">
+        <div>
           {loading && cameras.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8" style={{ color: '#8892a4' }}>
               <Camera className="w-8 h-8 mx-auto mb-2 animate-pulse" />
-              <p>Loading cameras...</p>
+              <p className="text-sm">Loading cameras...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8" style={{ color: '#8892a4' }}>
               <Camera className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Failed to load cameras</p>
-              <button
-                onClick={fetchCameras}
-                className="mt-2 px-3 py-1 bg-secondary rounded hover:bg-secondary/80 text-sm"
-              >
-                Retry
-              </button>
+              <button onClick={fetchCameras} className="mt-2 px-3 py-1 rounded text-sm" style={{ background: '#1c2a4a', color: '#adc6ff' }}>Retry</button>
             </div>
           ) : cameras.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8" style={{ color: '#8892a4' }}>
               <Camera className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No cameras configured</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {cameras.map(camera => (
                 <Go2RTCCameraCard
                   key={camera.id}

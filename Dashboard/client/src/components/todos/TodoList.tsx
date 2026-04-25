@@ -1,225 +1,456 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Check, CheckCheck, ChevronDown, ChevronRight, Plus, Search, X } from 'lucide-react';
 import { useSocket } from '../../hooks/useSocket';
-import { Plus, Filter } from 'lucide-react';
-import TodoTask from './TodoTask';
-import TaskForm from './TaskForm';
+
+const C = {
+  bg: '#0b1326',
+  l2: '#162040',
+  l3: '#1c2a4a',
+  l4: '#243356',
+  blue: '#adc6ff',
+  amber: '#f7be1d',
+  green: '#22c55e',
+  red: '#ffb4ab',
+  text: '#e2e8f0',
+  dim: '#c2c6d6',
+  dimmer: '#8892a4',
+};
+
+const PRIORITIES = { high: C.red, medium: C.amber, low: C.blue } as const;
+const CATEGORIES = ['All', 'System', 'Personal', 'Work', 'Home'] as const;
+const TASK_CATEGORIES = ['System', 'Personal', 'Work', 'Home'] as const;
+type Category = (typeof CATEGORIES)[number];
+type Priority = keyof typeof PRIORITIES;
+
+interface UiTask {
+  id: number;
+  title: string;
+  cat: Exclude<Category, 'All'>;
+  priority: Priority;
+  due: string;
+  done: boolean;
+  notes: string;
+}
+
+const NEW_TASK_DEFAULT: Omit<UiTask, 'id' | 'done' | 'notes'> = {
+  title: '',
+  cat: 'Personal',
+  priority: 'low',
+  due: 'Today',
+};
+
+function toDueLabel(input?: string): string {
+  if (!input) return 'Upcoming';
+  const lower = input.trim().toLowerCase();
+  if (lower === 'today') return 'Today';
+  if (lower === 'tomorrow') return 'Tomorrow';
+  if (lower === 'yesterday') return 'Yesterday';
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return input;
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const ymd = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  if (ymd(date) === ymd(today)) return 'Today';
+  if (ymd(date) === ymd(tomorrow)) return 'Tomorrow';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function dueGroup(due: string, done: boolean): 'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED' {
+  if (done) return 'COMPLETED';
+  if (due === 'Today') return 'TODAY';
+  if (due === 'Tomorrow') return 'TOMORROW';
+  return 'UPCOMING';
+}
 
 export default function TodoList() {
-  const { tasks, projects, createTask, updateTask, deleteTask, completeTask, createSubtask } = useSocket();
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [selectedProjectFilter, setSelectedProjectFilter] = useState<string | null>(null);
-  const [showCompleted, setShowCompleted] = useState(false);
+  const { tasks: socketTasks } = useSocket();
+  const [tasks, setTasks] = useState<UiTask[]>([]);
+  const [filter, setFilter] = useState<Category>('All');
+  const [search, setSearch] = useState('');
+  const [showDone, setShowDone] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [newTask, setNewTask] = useState(NEW_TASK_DEFAULT);
 
-  const editingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
+  useEffect(() => {
+    const mapped: UiTask[] = socketTasks
+      .filter(t => !t.parentTaskId)
+      .slice(0, 60)
+      .map((t, i) => ({
+        id: i + 1,
+        title: t.title,
+        cat: TASK_CATEGORIES[i % TASK_CATEGORIES.length],
+        priority: t.priority === 'none' ? 'low' : (t.priority as Priority),
+        due: toDueLabel(t.dueDate),
+        done: Boolean(t.isCompleted || t.completed),
+        notes: t.description || '',
+      }));
+    setTasks(mapped);
+  }, [socketTasks]);
 
-  // Group tasks by project
-  const groupedTasks = tasks.reduce((acc, task) => {
-    // Skip parent tasks (they're shown as subtasks)
-    if (task.parentTaskId) return acc;
+  const filtered = useMemo(() => {
+    return tasks.filter(task => {
+      if (!showDone && task.done) return false;
+      if (filter !== 'All' && task.cat !== filter) return false;
+      if (search.trim() && !task.title.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [tasks, showDone, filter, search]);
 
-    // Apply filters
-    if (selectedProjectFilter && task.projectId !== selectedProjectFilter) return acc;
-    if (!showCompleted && task.completed) return acc;
+  const grouped = useMemo(() => {
+    const groups: Record<'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED', UiTask[]> = {
+      TODAY: [],
+      TOMORROW: [],
+      UPCOMING: [],
+      COMPLETED: [],
+    };
+    filtered.forEach(task => groups[dueGroup(task.due, task.done)].push(task));
+    return groups;
+  }, [filtered]);
 
-    const projectId = task.projectId || 'no-project';
-    if (!acc[projectId]) {
-      acc[projectId] = [];
-    }
-    acc[projectId].push(task);
-    return acc;
-  }, {} as Record<string, typeof tasks>);
+  const stats = useMemo(() => {
+    const total = filtered.length;
+    const completed = filtered.filter(t => t.done).length;
+    const open = total - completed;
+    const high = filtered.filter(t => !t.done && t.priority === 'high').length;
+    const today = filtered.filter(t => !t.done && t.due === 'Today').length;
+    return { total, completed, open, high, today };
+  }, [filtered]);
 
-  // Sort tasks by order
-  Object.keys(groupedTasks).forEach(projectId => {
-    groupedTasks[projectId].sort((a, b) => a.order - b.order);
-  });
+  const progress = stats.total === 0 ? 0 : Math.round((stats.completed / stats.total) * 100);
+  const ringR = 32;
+  const circumference = 2 * Math.PI * ringR;
+  const dashOffset = circumference * (1 - progress / 100);
 
-  const handleNewTask = () => {
-    setEditingTaskId(null);
-    setIsTaskFormOpen(true);
+  const addTask = () => {
+    const title = newTask.title.trim();
+    if (!title) return;
+    const next: UiTask = {
+      id: Date.now(),
+      title,
+      cat: newTask.cat,
+      priority: newTask.priority,
+      due: newTask.due.trim() || 'Upcoming',
+      done: false,
+      notes: '',
+    };
+    setTasks(prev => [next, ...prev]);
+    setNewTask(NEW_TASK_DEFAULT);
+    setAddingNew(false);
+    setExpandedId(next.id);
   };
-
-  const handleEditTask = (taskId: string) => {
-    setEditingTaskId(taskId);
-    setIsTaskFormOpen(true);
-  };
-
-  const handleCloseTaskForm = () => {
-    setIsTaskFormOpen(false);
-    setEditingTaskId(null);
-  };
-
-  const handleSaveTask = async (taskData: any) => {
-    try {
-      if (editingTaskId) {
-        await updateTask(editingTaskId, taskData);
-      } else {
-        await createTask(taskData);
-      }
-      handleCloseTaskForm();
-    } catch (error) {
-      console.error('Failed to save task:', error);
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (confirm('Delete this task and all its subtasks?')) {
-      try {
-        await deleteTask(taskId);
-      } catch (error) {
-        console.error('Failed to delete task:', error);
-      }
-    }
-  };
-
-  const handleCompleteTask = async (taskId: string) => {
-    try {
-      await completeTask(taskId);
-    } catch (error) {
-      console.error('Failed to complete task:', error);
-    }
-  };
-
-  const handleAddSubtask = async (parentTaskId: string, subtaskData: any) => {
-    try {
-      await createSubtask(parentTaskId, subtaskData);
-    } catch (error) {
-      console.error('Failed to add subtask:', error);
-    }
-  };
-
-  const getProjectName = (projectId: string) => {
-    if (projectId === 'no-project') return 'No Project';
-    const project = projects.find(p => p.id === projectId);
-    return project?.name || 'Unknown Project';
-  };
-
-  const getProjectColor = (projectId: string) => {
-    if (projectId === 'no-project') return '#6b7280';
-    const project = projects.find(p => p.id === projectId);
-    return project?.color || '#3b82f6';
-  };
-
-  const totalTasks = tasks.filter(t => !t.parentTaskId).length;
-  const completedTasks = tasks.filter(t => !t.parentTaskId && t.completed).length;
 
   return (
-    <div className="flex flex-col h-full bg-card" data-testid="todo-list">
-      {/* Header */}
-      <div className="flex flex-col gap-3 p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="tasks-header">Tasks</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {completedTasks} of {totalTasks} completed
-            </p>
+    <div
+      style={{
+        display: 'flex',
+        gap: 16,
+        overflow: 'hidden',
+        height: '100%',
+        fontFamily: "'Inter', sans-serif",
+      }}
+      data-testid="todo-list"
+    >
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ flex: 1, background: C.l2, borderRadius: 8, padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={14} color={C.dimmer} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search tasks"
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: C.text }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', color: C.dimmer, cursor: 'pointer', display: 'flex' }}>
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Project Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <select
-                data-testid="project-filter"
-                value={selectedProjectFilter || ''}
-                onChange={(e) => setSelectedProjectFilter(e.target.value || null)}
-                className="pl-9 pr-8 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+          <div style={{ display: 'flex', background: C.l2, borderRadius: 8 }}>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                style={{
+                  padding: '6px 11px',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: filter === cat ? C.l4 : 'transparent',
+                  color: filter === cat ? C.text : C.dimmer,
+                }}
               >
-                <option value="">All Projects</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowDone(v => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              borderRadius: 8,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 500,
+              padding: '6px 10px',
+              background: showDone ? `${C.blue}22` : C.l2,
+              color: showDone ? C.blue : C.dimmer,
+            }}
+          >
+            <CheckCheck size={12} />
+            Completed
+          </button>
+
+          <button
+            onClick={() => setAddingNew(v => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              background: C.blue,
+              color: C.bg,
+              padding: '6px 12px',
+              borderRadius: 8,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            <Plus size={12} />
+            Add Task
+          </button>
+        </div>
+
+        {addingNew && (
+          <div style={{ background: C.l2, borderRadius: 10, padding: 16, border: `1px solid ${C.blue}33`, marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <input
+                value={newTask.title}
+                onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Task title"
+                style={{ flex: 1, background: C.l3, borderRadius: 8, border: 'none', padding: '8px 12px', color: C.text, fontSize: 14, outline: 'none' }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') addTask();
+                  if (e.key === 'Escape') setAddingNew(false);
+                }}
+              />
+              <input
+                value={newTask.due}
+                onChange={e => setNewTask(prev => ({ ...prev, due: e.target.value }))}
+                placeholder="Today"
+                style={{ width: 130, background: C.l3, borderRadius: 8, border: 'none', padding: '8px 12px', color: C.text, fontSize: 14, outline: 'none' }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') addTask();
+                  if (e.key === 'Escape') setAddingNew(false);
+                }}
+              />
             </div>
 
-            {/* Show Completed Toggle */}
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                data-testid="show-completed-toggle"
-                type="checkbox"
-                checked={showCompleted}
-                onChange={(e) => setShowCompleted(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              Show completed
-            </label>
-
-            {/* New Task Button */}
-            <button
-              data-testid="new-task-button"
-              onClick={handleNewTask}
-              className="flex items-center gap-2 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Task
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, gap: 10, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {(['high', 'medium', 'low'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setNewTask(prev => ({ ...prev, priority: p }))}
+                    style={{
+                      borderRadius: 10,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      cursor: 'pointer',
+                      border: newTask.priority === p ? `1px solid ${PRIORITIES[p]}44` : '1px solid transparent',
+                      background: newTask.priority === p ? `${PRIORITIES[p]}22` : C.l3,
+                      color: newTask.priority === p ? PRIORITIES[p] : C.dimmer,
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+                {CATEGORIES.filter(c => c !== 'All').map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setNewTask(prev => ({ ...prev, cat }))}
+                    style={{
+                      borderRadius: 10,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: 'none',
+                      background: newTask.cat === cat ? C.l4 : C.l3,
+                      color: newTask.cat === cat ? C.text : C.dimmer,
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setAddingNew(false)} style={{ border: 'none', cursor: 'pointer', borderRadius: 6, fontSize: 11, fontWeight: 600, padding: '6px 10px', color: C.dimmer, background: C.l3 }}>
+                  Cancel
+                </button>
+                <button onClick={addTask} style={{ border: 'none', cursor: 'pointer', borderRadius: 6, fontSize: 11, fontWeight: 600, padding: '6px 10px', color: C.bg, background: C.blue }}>
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
+        )}
+
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: 2 }}>
+          {(['TODAY', 'TOMORROW', 'UPCOMING', 'COMPLETED'] as const).map(groupName => {
+            const groupTasks = grouped[groupName];
+            if (groupTasks.length === 0) return null;
+            const hasHigh = groupName === 'TODAY' && groupTasks.some(t => t.priority === 'high' && !t.done);
+            return (
+              <div key={groupName} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: C.dimmer, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{groupName}</span>
+                  <span style={{ background: C.l3, borderRadius: 10, padding: '1px 7px', fontSize: 10, fontWeight: 600, color: C.dim }}>{groupTasks.length}</span>
+                  {hasHigh && <span style={{ background: `${C.red}18`, color: C.red, borderRadius: 10, padding: '1px 7px', fontSize: 10, fontWeight: 600 }}>HIGH</span>}
+                </div>
+                {groupTasks.map(task => {
+                  const isExpanded = expandedId === task.id;
+                  const priorityColor = PRIORITIES[task.priority];
+                  return (
+                    <div
+                      key={task.id}
+                      style={{
+                        background: isExpanded ? C.l3 : C.l2,
+                        borderRadius: 10,
+                        marginBottom: 5,
+                        border: `1px solid ${isExpanded ? C.l4 : 'transparent'}`,
+                        opacity: task.done ? 0.55 : 1,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div
+                        onClick={() => setExpandedId(prev => (prev === task.id ? null : task.id))}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer' }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, done: !t.done } : t)));
+                          }}
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 4,
+                            border: `1.5px solid ${task.done ? C.blue : C.l4}`,
+                            background: task.done ? C.blue : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {task.done && <Check size={11} color={C.bg} />}
+                        </button>
+                        <div style={{ width: 2, height: 22, borderRadius: 2, background: priorityColor, opacity: task.done ? 0.4 : 1, flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 500, color: C.text, textDecoration: task.done ? 'line-through' : 'none' }}>{task.title}</div>
+                          <div style={{ marginTop: 2, display: 'flex', gap: 7, alignItems: 'center' }}>
+                            <span style={{ background: `${priorityColor}18`, borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 600, color: priorityColor, textTransform: 'capitalize' }}>{task.priority}</span>
+                            <span style={{ fontSize: 10, color: C.dimmer }}>{task.cat}</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 11, color: task.due === 'Today' ? C.amber : C.dimmer, fontWeight: task.due === 'Today' ? 600 : 400, flexShrink: 0 }}>{task.due}</span>
+                        {isExpanded ? <ChevronDown size={13} color={C.dimmer} /> : <ChevronRight size={13} color={C.dimmer} />}
+                      </div>
+
+                      {isExpanded && (
+                        <div style={{ padding: '0 12px 10px 40px', borderTop: `1px solid ${C.l4}22` }}>
+                          <textarea
+                            rows={2}
+                            value={task.notes}
+                            onChange={e => setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, notes: e.target.value } : t)))}
+                            style={{ marginTop: 12, width: '100%', resize: 'none', border: 'none', borderRadius: 8, background: C.l4, padding: '8px 12px', fontSize: 12, color: C.dim, outline: 'none', boxSizing: 'border-box' }}
+                            placeholder="Add notes..."
+                          />
+                          <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+                            <button
+                              onClick={() => setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, done: !t.done } : t)))}
+                              style={{
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '6px 10px',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                background: task.done ? C.l4 : `${C.amber}18`,
+                                color: task.done ? C.dim : C.amber,
+                              }}
+                            >
+                              {task.done ? 'Mark Incomplete' : 'Mark Done'}
+                            </button>
+                            <button
+                              onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
+                              style={{ border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', background: `${C.red}18`, color: C.red }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Task List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {Object.keys(groupedTasks).length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No tasks yet. Create your first task to get started!
-            </p>
-            <button
-              onClick={handleNewTask}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Create Task
-            </button>
+      <div style={{ width: 116, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+        {[
+          { label: 'OPEN TASKS', value: stats.open, color: C.blue },
+          { label: 'COMPLETED', value: stats.completed, color: C.green },
+          { label: 'HIGH PRIORITY', value: stats.high, color: C.red },
+          { label: 'DUE TODAY', value: stats.today, color: C.amber },
+        ].map(card => (
+          <div key={card.label} style={{ background: C.l2, borderRadius: 10, padding: '12px 8px', textAlign: 'center' }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 42, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.value}</div>
+            <div style={{ marginTop: 6, fontSize: 9, color: C.dimmer, letterSpacing: '0.08em' }}>{card.label}</div>
           </div>
-        ) : (
-          Object.entries(groupedTasks).map(([projectId, projectTasks]) => (
-            <div key={projectId} className="space-y-3">
-              {/* Project Header */}
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: getProjectColor(projectId) }}
-                />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {getProjectName(projectId)}
-                </h3>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  ({projectTasks.length})
-                </span>
-              </div>
+        ))}
 
-              {/* Tasks */}
-              <div className="space-y-2 pl-5">
-                {projectTasks.map((task) => (
-                  <TodoTask
-                    key={task.id}
-                    task={task}
-                    allTasks={tasks}
-                    onEdit={handleEditTask}
-                    onDelete={handleDeleteTask}
-                    onComplete={handleCompleteTask}
-                    onAddSubtask={handleAddSubtask}
-                  />
-                ))}
-              </div>
+        <div style={{ background: C.l2, borderRadius: 10, padding: '12px 8px', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: C.dimmer, marginBottom: 10, letterSpacing: '0.08em' }}>COMPLETION</div>
+          <div style={{ position: 'relative', width: 74, height: 74, margin: '0 auto' }}>
+            <svg viewBox="0 0 80 80" style={{ width: 74, height: 74, transform: 'rotate(-90deg)' }}>
+              <circle cx="40" cy="40" r={ringR} fill="none" stroke={C.l4} strokeWidth="8" />
+              <circle
+                cx="40"
+                cy="40"
+                r={ringR}
+                fill="none"
+                stroke={C.green}
+                strokeWidth="8"
+                strokeDasharray={circumference}
+                strokeDashoffset={dashOffset}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+              />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 800, color: C.text }}>
+              {progress}%
             </div>
-          ))
-        )}
+          </div>
+        </div>
       </div>
-
-      {/* Task Form Modal */}
-      {isTaskFormOpen && (
-        <TaskForm
-          task={editingTask || undefined}
-          projects={projects}
-          onClose={handleCloseTaskForm}
-          onSave={handleSaveTask}
-        />
-      )}
     </div>
   );
 }

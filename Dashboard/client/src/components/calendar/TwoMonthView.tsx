@@ -70,7 +70,7 @@ export default function TwoMonthView({
         .attr('x', monthWidth / 2)
         .attr('y', -30)
         .attr('text-anchor', 'middle')
-        .attr('fill', 'currentColor')
+        .attr('fill', '#e2e8f0')
         .attr('font-size', '18px')
         .attr('font-weight', '700')
         .text(format(monthDate, 'MMMM yyyy'));
@@ -84,7 +84,7 @@ export default function TwoMonthView({
         .attr('x', (_d, i) => i * cellWidth + cellWidth / 2)
         .attr('y', -10)
         .attr('text-anchor', 'middle')
-        .attr('fill', 'currentColor')
+        .attr('fill', '#8892a4')
         .attr('font-size', '11px')
         .attr('font-weight', '600')
         .text(d => d);
@@ -109,11 +109,11 @@ export default function TwoMonthView({
         .attr('x', 1)
         .attr('y', 1)
         .attr('fill', d => {
-          if (!isSameMonth(d, monthDate)) return 'rgba(0, 0, 0, 0.02)';
-          if (isSameDay(d, new Date())) return 'rgba(59, 130, 246, 0.1)';
-          return 'rgba(255, 255, 255, 0.5)';
+          if (!isSameMonth(d, monthDate)) return '#0f1a2e';
+          if (isSameDay(d, new Date())) return 'rgba(173, 198, 255, 0.1)';
+          return '#162040';
         })
-        .attr('stroke', 'rgba(0, 0, 0, 0.1)')
+        .attr('stroke', '#243356')
         .attr('stroke-width', 0.5)
         .attr('rx', 3)
         .style('cursor', 'pointer')
@@ -127,9 +127,9 @@ export default function TwoMonthView({
         .attr('x', 6)
         .attr('y', 16)
         .attr('fill', d => {
-          if (!isSameMonth(d, monthDate)) return 'rgba(0, 0, 0, 0.3)';
-          if (isSameDay(d, new Date())) return 'rgb(59, 130, 246)';
-          return 'rgba(0, 0, 0, 0.8)';
+          if (!isSameMonth(d, monthDate)) return '#8892a4';
+          if (isSameDay(d, new Date())) return '#adc6ff';
+          return '#e2e8f0';
         })
         .attr('font-size', '12px')
         .attr('font-weight', d => isSameDay(d, new Date()) ? '700' : '500')
@@ -171,7 +171,7 @@ export default function TwoMonthView({
           g.append('text')
             .attr('x', x + 38)
             .attr('y', y + cellHeight - 7)
-            .attr('fill', 'rgba(0, 0, 0, 0.5)')
+            .attr('fill', '#8892a4')
             .attr('font-size', '9px')
             .text(`+${dayEvents.length - 3}`)
             .style('cursor', 'pointer')
@@ -195,7 +195,7 @@ export default function TwoMonthView({
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
-        className="text-gray-900 dark:text-white"
+        style={{ background: '#0f1a2e' }}
       />
     </div>
   );

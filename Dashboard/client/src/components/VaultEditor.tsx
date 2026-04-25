@@ -12,11 +12,20 @@ import {
   ArrowLeft,
   Send,
   Settings,
-  X,
   Loader2,
   RefreshCw,
   Home,
+  AlignLeft,
+  Bot,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
+
+const C = {
+  bg: '#0b1326', l1: '#121f38', l2: '#162040', l3: '#1c2a4a', l4: '#243356',
+  blue: '#adc6ff', amber: '#f7be1d', green: '#22c55e', red: '#ffb4ab',
+  text: '#e2e8f0', dim: '#c2c6d6', dimmer: '#8892a4',
+};
 
 interface FileEntry {
   name: string;
@@ -65,17 +74,16 @@ const BOOKMARKS = [
   { label: 'Dashboard', path: '/home/jwcollie/Dashboard' },
   { label: 'Shared', path: '/blackbox/shared' },
   { label: 'Documents', path: '/blackbox/documents' },
-  { label: 'Media', path: '/blackbox/media' },
 ];
+
+function fileColor(ext: string | null): string {
+  return ({ py: C.amber, js: C.blue, ts: C.blue, md: C.green, css: '#ff8a80', json: '#ff8a80' } as Record<string, string>)[ext?.slice(1) || ''] || C.dimmer;
+}
 
 function useLocalStorage<T>(key: string, defaultValue: T) {
   const [value, setValue] = useState<T>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored ? JSON.parse(stored) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : defaultValue; }
+    catch { return defaultValue; }
   });
   const set = useCallback((v: T) => {
     setValue(v);
@@ -84,22 +92,18 @@ function useLocalStorage<T>(key: string, defaultValue: T) {
   return [value, set] as const;
 }
 
-
-function FileIcon({ entry }: { entry: FileEntry }) {
-  if (entry.isDirectory) return <Folder className="w-4 h-4 text-yellow-400 flex-shrink-0" />;
-  if (['.md', '.mdx', '.txt'].includes(entry.extension || ''))
-    return <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />;
-  return <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />;
-}
-
 export function VaultEditor() {
   const [currentPath, setCurrentPath] = useState(ROOT_PATH);
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [parentPath, setParentPath] = useState('');
   const [browseError, setBrowseError] = useState('');
-  const [openFile, setOpenFile] = useState<string | null>(null);
-  const [content, setContent] = useState('');
-  const [savedContent, setSavedContent] = useState('');
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+
+  // Tabs
+  const [openTabs, setOpenTabs] = useState<string[]>([]);
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [fileContents, setFileContents] = useState<Record<string, string>>({});
+  const [savedContents, setSavedContents] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
@@ -113,10 +117,12 @@ export function VaultEditor() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [showAI, setShowAI] = useState(true);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumRef = useRef<HTMLDivElement>(null);
 
-  // New file/folder dialog
+  // Create dialog
   const [createDialog, setCreateDialog] = useState<{ type: 'file' | 'dir' } | null>(null);
   const [newName, setNewName] = useState('');
 
@@ -124,68 +130,82 @@ export function VaultEditor() {
     setBrowseError('');
     try {
       const res = await fetch(`/api/vault/browse?path=${encodeURIComponent(path)}`);
-      if (!res.ok) {
-        const err = await res.json();
-        setBrowseError(err.error || 'Failed to browse');
-        return;
-      }
+      if (!res.ok) { const err = await res.json(); setBrowseError(err.error || 'Failed to browse'); return; }
       const data: BrowseResult = await res.json();
       setEntries(data.items);
       setCurrentPath(data.path);
       setParentPath(data.parent);
-    } catch {
-      setBrowseError('Network error');
-    }
+    } catch { setBrowseError('Network error'); }
   }, []);
 
   useEffect(() => { browse(ROOT_PATH); }, [browse]);
-
   useEffect(() => {
-    fetch('/api/chat/models')
-      .then(r => r.json())
-      .then(models => setOllamaModels(models.map((m: { name: string }) => m.name)))
-      .catch(() => {});
+    fetch('/api/chat/models').then(r => r.json()).then(m => setOllamaModels(m.map((x: {name:string}) => x.name))).catch(() => {});
   }, []);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const content = activeFile ? (fileContents[activeFile] || '') : '';
+  const savedContent = activeFile ? (savedContents[activeFile] || '') : '';
+  const isDirty = content !== savedContent;
+  const fileName = activeFile ? activeFile.split('/').pop() : null;
+
+  const EDITABLE_EXTS = ['.md', '.mdx', '.txt', '.sh', '.py', '.js', '.ts', '.json', '.yaml', '.yml', '.env', '.conf', '.cfg', '.ini', '.toml'];
 
   const openEntry = async (entry: FileEntry) => {
-    if (entry.isDirectory) {
-      browse(entry.path);
-      return;
-    }
-    if (!entry.extension || ['.md', '.mdx', '.txt', '.sh', '.py', '.js', '.ts', '.json', '.yaml', '.yml', '.env', '.conf', '.cfg', '.ini', '.toml'].includes(entry.extension)) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/vault/read?path=${encodeURIComponent(entry.path)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setContent(data.content);
-          setSavedContent(data.content);
-          setOpenFile(entry.path);
-        }
-      } finally {
-        setLoading(false);
+    if (entry.isDirectory) { browse(entry.path); return; }
+    if (!entry.extension || EDITABLE_EXTS.includes(entry.extension)) {
+      if (!openTabs.includes(entry.path)) setOpenTabs(prev => [...prev, entry.path]);
+      setActiveFile(entry.path);
+      if (!(entry.path in fileContents)) {
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/vault/read?path=${encodeURIComponent(entry.path)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setFileContents(prev => ({ ...prev, [entry.path]: data.content }));
+            setSavedContents(prev => ({ ...prev, [entry.path]: data.content }));
+          }
+        } finally { setLoading(false); }
       }
     }
   };
 
-  const save = async () => {
-    if (!openFile) return;
+  const closeTab = (path: string) => {
+    const idx = openTabs.indexOf(path);
+    const newTabs = openTabs.filter(t => t !== path);
+    setOpenTabs(newTabs);
+    if (activeFile === path) {
+      setActiveFile(newTabs[Math.min(idx, newTabs.length - 1)] || null);
+    }
+  };
+
+  const setContent = (c: string) => {
+    if (!activeFile) return;
+    setFileContents(prev => ({ ...prev, [activeFile]: c }));
+  };
+
+  const save = async (path = activeFile, value = content) => {
+    if (!path) return;
     setSaving(true);
     try {
       const res = await fetch('/api/vault/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: openFile, content }),
+        body: JSON.stringify({ path, content: value }),
       });
-      if (res.ok) setSavedContent(content);
-    } finally {
-      setSaving(false);
-    }
+      if (res.ok) setSavedContents(prev => ({ ...prev, [path]: value }));
+    } finally { setSaving(false); }
   };
+
+  // Autosave current file shortly after edits.
+  useEffect(() => {
+    if (!activeFile) return;
+    if (!isDirty) return;
+    const autosaveTimer = setTimeout(() => {
+      void save(activeFile, content);
+    }, 600);
+    return () => clearTimeout(autosaveTimer);
+  }, [activeFile, content, isDirty]);
 
   const createEntry = async () => {
     if (!newName || !createDialog) return;
@@ -203,48 +223,33 @@ export function VaultEditor() {
   const deleteEntry = async (entry: FileEntry) => {
     if (!confirm(`Delete "${entry.name}"?`)) return;
     await fetch(`/api/vault/delete?path=${encodeURIComponent(entry.path)}`, { method: 'DELETE' });
-    if (openFile === entry.path) { setOpenFile(null); setContent(''); }
+    if (activeFile === entry.path) { closeTab(entry.path); }
     browse(currentPath);
   };
 
   const sendMessage = async () => {
     const text = chatInput.trim();
     if (!text || chatLoading) return;
-
     const userMsg: ChatMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setChatInput('');
     setChatLoading(true);
-
-    const systemPrompt = openFile
-      ? `You are a helpful assistant working on a file: ${openFile}\n\nFile content:\n\`\`\`\n${content.slice(0, 8000)}\n\`\`\``
-      : 'You are a helpful assistant for file management and writing.';
-
-    const allMessages = [
-      { role: 'system' as const, content: systemPrompt },
-      ...messages,
-      userMsg,
-    ];
-
+    const systemPrompt = activeFile
+      ? `You are PiAssistant, an AI code assistant. The user is editing: ${activeFile}\n\nFile content:\n\`\`\`\n${content.slice(0, 8000)}\n\`\`\``
+      : 'You are PiAssistant, an AI code assistant in the Intelligence Console editor.';
+    const allMessages = [{ role: 'system' as const, content: systemPrompt }, ...messages, userMsg];
     try {
-      const cfg = modelConfig;
-
-      if (cfg.provider === 'ollama') {
-        // Add empty placeholder immediately — tokens stream in
+      if (modelConfig.provider === 'ollama') {
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
         const res = await fetch('/api/chat/ollama', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: cfg.ollamaModel, messages: allMessages }),
+          body: JSON.stringify({ model: modelConfig.ollamaModel, messages: allMessages }),
         });
-
         if (!res.ok || !res.body) throw new Error('Stream failed');
-
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = '';
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -256,42 +261,20 @@ export function VaultEditor() {
             const data = line.slice(6);
             if (data === '[DONE]') { setChatLoading(false); return; }
             if (data.startsWith('[ERROR]')) {
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { ...updated[updated.length - 1], content: data };
-                return updated;
-              });
-              setChatLoading(false);
-              return;
+              setMessages(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], content: data }; return u; });
+              setChatLoading(false); return;
             }
-            setMessages(prev => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              updated[updated.length - 1] = { ...last, content: last.content + data };
-              return updated;
-            });
+            setMessages(prev => { const u = [...prev]; const last = u[u.length-1]; u[u.length-1] = { ...last, content: last.content + data }; return u; });
           }
         }
-        setChatLoading(false);
-        return;
+        setChatLoading(false); return;
       }
-
-      // Claude and Gemini — JSON responses
       let res: Response;
-      if (cfg.provider === 'claude') {
-        res = await fetch('/api/chat/claude', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: cfg.claudeKey, model: cfg.claudeModel, messages: allMessages }),
-        });
+      if (modelConfig.provider === 'claude') {
+        res = await fetch('/api/chat/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: modelConfig.claudeKey, model: modelConfig.claudeModel, messages: allMessages }) });
       } else {
-        res = await fetch('/api/chat/gemini', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: cfg.geminiKey, model: cfg.geminiModel, messages: allMessages }),
-        });
+        res = await fetch('/api/chat/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: modelConfig.geminiKey, model: modelConfig.geminiModel, messages: allMessages }) });
       }
-
       if (res.ok) {
         const data = await res.json();
         setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
@@ -299,443 +282,349 @@ export function VaultEditor() {
         const err = await res.json();
         setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.error}` }]);
       }
-    } catch (e) {
+    } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Check model config.' }]);
-    } finally {
-      setChatLoading(false);
-    }
+    } finally { setChatLoading(false); }
   };
 
-  const isDirty = content !== savedContent;
-  const fileName = openFile ? openFile.split('/').pop() : null;
+  const lineCount = content.split('\n').length;
 
   return (
-    <div className="flex h-full bg-[#0d0d17] text-slate-200 overflow-hidden rounded-xl border border-slate-800">
-      {/* File sidebar */}
-      <div className="w-64 flex-shrink-0 border-r border-slate-800 flex flex-col bg-[#0a0a14]">
-        {/* Sidebar header */}
-        <div className="px-3 py-3 border-b border-slate-800">
-          <div className="flex items-center gap-1 mb-2">
-            <button
-              onClick={() => browse(ROOT_PATH)}
-              className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
-              title="Home"
-            >
-              <Home className="w-3.5 h-3.5" />
-            </button>
-            {currentPath !== ROOT_PATH && parentPath && (
-              <button
-                onClick={() => browse(parentPath)}
-                className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
-                title="Up"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button
-              onClick={() => browse(currentPath)}
-              className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-            <div className="flex-1" />
-            <button
-              onClick={() => setCreateDialog({ type: 'file' })}
-              className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
-              title="New file"
-            >
-              <FilePlus className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setCreateDialog({ type: 'dir' })}
-              className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
-              title="New folder"
-            >
-              <FolderPlus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Current path + custom navigation */}
-          <div className="flex gap-1">
-            <input
-              type="text"
-              value={customPath || currentPath}
-              onChange={e => setCustomPath(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') { browse(customPath || currentPath); setCustomPath(''); }
-              }}
-              onBlur={() => setCustomPath('')}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-400 font-mono min-w-0"
-              placeholder={currentPath}
-            />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.bg, color: C.text, overflow: 'hidden' }}>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', background: C.l1, borderBottom: `1px solid ${C.l4}33`, flexShrink: 0 }}>
+        {/* Tree toggle */}
+        <div style={{ borderRight: `1px solid ${C.l4}33`, padding: '0 8px', display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.dimmer }}>
+            <AlignLeft style={{ width: 14, height: 14 }} />
           </div>
         </div>
-
-        {/* Create dialog */}
-        {createDialog && (
-          <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/50">
-            <p className="text-xs text-slate-500 mb-1">New {createDialog.type}</p>
-            <div className="flex gap-1">
-              <input
-                autoFocus
-                type="text"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') createEntry(); if (e.key === 'Escape') setCreateDialog(null); }}
-                placeholder={createDialog.type === 'file' ? 'note.md' : 'folder'}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 min-w-0"
-              />
-              <button onClick={createEntry} className="px-2 py-1 bg-cyan-600 rounded text-xs text-white hover:bg-cyan-500">
-                ✓
-              </button>
-              <button onClick={() => setCreateDialog(null)} className="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
-                ✕
-              </button>
+        {openTabs.map(path => {
+          const name = path.split('/').pop() || path;
+          const ext = name.includes('.') ? '.' + name.split('.').pop() : null;
+          const isActive = path === activeFile;
+          return (
+            <div key={path} onClick={() => setActiveFile(path)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRight: `1px solid ${C.l4}22`, cursor: 'pointer', background: isActive ? C.l2 : 'transparent', borderTop: `2px solid ${isActive ? C.blue : 'transparent'}`, transition: 'all 0.15s', flexShrink: 0 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 4, background: fileColor(ext), flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: isActive ? C.text : C.dimmer }}>{name}</span>
+              {isDirty && isActive && <span style={{ width: 6, height: 6, borderRadius: 3, background: C.blue }} />}
+              <span onClick={e => { e.stopPropagation(); closeTab(path); }}
+                style={{ color: C.dimmer, opacity: 0.5, marginLeft: 2, lineHeight: 1, cursor: 'pointer', fontSize: 16 }}>×</span>
             </div>
+          );
+        })}
+        {/* Toolbar actions */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, padding: '0 12px' }}>
+          {/* View toggles */}
+          <div style={{ display: 'flex', background: C.bg, borderRadius: 6, overflow: 'hidden' }}>
+            {(['edit', 'split', 'preview'] as const).map(mode => (
+              <button key={mode} onClick={() => setViewMode(mode)}
+                style={{ padding: '4px 8px', background: viewMode === mode ? C.l3 : 'transparent', color: viewMode === mode ? C.text : C.dimmer, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                {mode === 'edit' ? <Code style={{ width: 13, height: 13 }} /> : mode === 'preview' ? <Eye style={{ width: 13, height: 13 }} /> : <span style={{ fontSize: 11, display: 'flex', gap: 2 }}><Code style={{ width: 11, height: 11 }} /><Eye style={{ width: 11, height: 11 }} /></span>}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* Bookmarks */}
-        <div className="px-2 py-1.5 border-b border-slate-800">
-          <p className="text-[10px] text-slate-600 uppercase tracking-widest px-1 mb-1">Bookmarks</p>
-          {BOOKMARKS.map(b => (
-            <button
-              key={b.path}
-              onClick={() => browse(b.path)}
-              className={`w-full text-left flex items-center gap-1.5 px-2 py-0.5 rounded text-xs transition-colors hover:bg-slate-800 ${
-                currentPath === b.path ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <Home className="w-3 h-3 flex-shrink-0" />
-              {b.label}
-            </button>
-          ))}
-        </div>
-
-        {/* File list */}
-        <div className="flex-1 overflow-auto py-1">
-          {browseError ? (
-            <div className="px-3 py-4 text-xs text-red-400">{browseError}</div>
-          ) : entries.length === 0 ? (
-            <div className="px-3 py-4 text-xs text-slate-600">Empty directory</div>
-          ) : (
-            entries.map(entry => (
-              <div
-                key={entry.path}
-                className={`group flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-slate-800/60 transition-colors ${
-                  openFile === entry.path ? 'bg-slate-800 text-slate-100' : 'text-slate-400'
-                }`}
-                onClick={() => openEntry(entry)}
-              >
-                <FileIcon entry={entry} />
-                <span className="flex-1 text-xs truncate">{entry.name}</span>
-                <button
-                  onClick={e => { e.stopPropagation(); deleteEntry(entry); }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-400 transition-all"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))
+          {saving && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, background: `${C.blue}20`, color: C.blue, fontSize: 12 }}>
+              <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+              Saving...
+            </div>
           )}
+          <button onClick={() => setShowAI(v => !v)}
+            style={{ padding: '5px 10px', borderRadius: 6, background: showAI ? `${C.blue}20` : C.l3, color: showAI ? C.blue : C.dimmer, fontSize: 12, border: 'none', cursor: 'pointer' }}>
+            AI
+          </button>
         </div>
       </div>
 
-      {/* Editor area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Editor toolbar */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-800 bg-[#0d0d17]">
-          {openFile ? (
-            <>
-              <span className="text-sm text-slate-300 font-medium">
-                {fileName}
-                {isDirty && <span className="ml-1 text-cyan-500">●</span>}
-              </span>
-              <span className="text-xs text-slate-600 hidden lg:block">{openFile}</span>
-            </>
-          ) : (
-            <span className="text-sm text-slate-600">No file open</span>
-          )}
-          <div className="flex-1" />
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* File tree */}
+        <div style={{ width: 200, background: C.l1, borderRight: `1px solid ${C.l4}22`, display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}>
+          {/* Tree header */}
+          <div style={{ padding: '10px 12px 6px', borderBottom: `1px solid ${C.l4}22` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <button onClick={() => browse(ROOT_PATH)} title="Home" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dimmer, padding: 4, display: 'flex' }}>
+                <Home style={{ width: 13, height: 13 }} />
+              </button>
+              {currentPath !== ROOT_PATH && parentPath && (
+                <button onClick={() => browse(parentPath)} title="Up" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dimmer, padding: 4, display: 'flex' }}>
+                  <ArrowLeft style={{ width: 13, height: 13 }} />
+                </button>
+              )}
+              <button onClick={() => browse(currentPath)} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dimmer, padding: 4, display: 'flex' }}>
+                <RefreshCw style={{ width: 13, height: 13 }} />
+              </button>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => setCreateDialog({ type: 'file' })} title="New file" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dimmer, padding: 4, display: 'flex' }}>
+                <FilePlus style={{ width: 13, height: 13 }} />
+              </button>
+              <button onClick={() => setCreateDialog({ type: 'dir' })} title="New folder" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dimmer, padding: 4, display: 'flex' }}>
+                <FolderPlus style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+            <input type="text" value={customPath || currentPath} onChange={e => setCustomPath(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { browse(customPath || currentPath); setCustomPath(''); } }}
+              onBlur={() => setCustomPath('')}
+              style={{ width: '100%', background: C.bg, border: `1px solid ${C.l4}80`, borderRadius: 4, padding: '3px 8px', fontSize: 11, color: C.dimmer, fontFamily: 'monospace', boxSizing: 'border-box', outline: 'none' }}
+              placeholder={currentPath} />
+          </div>
 
-          {/* View toggles */}
-          <div className="flex gap-0.5 bg-slate-900 rounded-lg p-0.5">
-            {(['edit', 'split', 'preview'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                  viewMode === mode ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {mode === 'edit' ? <Code className="w-3.5 h-3.5" /> : mode === 'preview' ? <Eye className="w-3.5 h-3.5" /> : (
-                  <span className="flex gap-0.5"><Code className="w-3 h-3" /><Eye className="w-3 h-3" /></span>
-                )}
+          {/* Bookmarks */}
+          <div style={{ padding: '6px 0 2px', borderBottom: `1px solid ${C.l4}22` }}>
+            <div style={{ fontSize: 10, color: C.l4, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 12px', marginBottom: 4 }}>Bookmarks</div>
+            {BOOKMARKS.map(b => (
+              <button key={b.path} onClick={() => browse(b.path)}
+                style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6, padding: '3px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: currentPath === b.path ? C.blue : C.dimmer }}>
+                <Home style={{ width: 11, height: 11, flexShrink: 0 }} /> {b.label}
               </button>
             ))}
           </div>
 
-          <button
-            onClick={save}
-            disabled={!openFile || !isDirty || saving}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              isDirty && openFile
-                ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
-                : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-            }`}
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save
-          </button>
+          {/* Create dialog */}
+          {createDialog && (
+            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.l4}22`, background: `${C.l3}80` }}>
+              <div style={{ fontSize: 11, color: C.dimmer, marginBottom: 4 }}>New {createDialog.type}</div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input autoFocus type="text" value={newName} onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') createEntry(); if (e.key === 'Escape') setCreateDialog(null); }}
+                  placeholder={createDialog.type === 'file' ? 'note.md' : 'folder'}
+                  style={{ flex: 1, background: C.bg, border: `1px solid ${C.l4}80`, borderRadius: 4, padding: '3px 6px', fontSize: 11, color: C.text, outline: 'none' }} />
+                <button onClick={createEntry} style={{ background: `${C.blue}30`, borderRadius: 4, padding: '2px 8px', fontSize: 11, color: C.blue, border: 'none', cursor: 'pointer' }}>✓</button>
+                <button onClick={() => setCreateDialog(null)} style={{ background: C.l3, borderRadius: 4, padding: '2px 8px', fontSize: 11, color: C.dimmer, border: 'none', cursor: 'pointer' }}>✕</button>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={() => setShowAI(v => !v)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showAI ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            AI
-          </button>
+          {/* File list */}
+          <div style={{ flex: 1, overflowY: 'auto', paddingTop: 8 }}>
+            <div style={{ fontSize: 11, color: C.dimmer, letterSpacing: '0.08em', fontWeight: 600, padding: '0 12px', marginBottom: 6 }}>EXPLORER</div>
+            {browseError ? (
+              <div style={{ padding: '8px 12px', fontSize: 11, color: C.red }}>{browseError}</div>
+            ) : entries.length === 0 ? (
+              <div style={{ padding: '8px 12px', fontSize: 11, color: C.dimmer }}>Empty directory</div>
+            ) : (
+              entries.map(entry => {
+                const ext = entry.extension;
+                const isOpen = activeFile === entry.path;
+                if (entry.isDirectory) {
+                  const isExpanded = expandedFolders[entry.path];
+                  return (
+                    <div key={entry.path}>
+                      <div
+                        onClick={() => {
+                          setExpandedFolders(prev => ({ ...prev, [entry.path]: !prev[entry.path] }));
+                          openEntry(entry);
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', cursor: 'pointer', fontSize: 13, color: C.dim }}>
+                        {isExpanded ? <ChevronDown style={{ width: 12, height: 12, flexShrink: 0 }} /> : <ChevronRight style={{ width: 12, height: 12, flexShrink: 0 }} />}
+                        <Folder style={{ width: 13, height: 13, color: C.amber, flexShrink: 0 }} />
+                        {entry.name}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={entry.path}
+                    className="group"
+                    onClick={() => openEntry(entry)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 12px 5px 20px', cursor: 'pointer', fontSize: 12, background: isOpen ? C.l3 : 'transparent', color: isOpen ? C.text : C.dimmer, transition: 'background 0.1s' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: fileColor(ext), flexShrink: 0 }} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                    <button onClick={e => { e.stopPropagation(); deleteEntry(entry); }}
+                      className="opacity-0 group-hover:opacity-100"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.red, padding: 2, display: 'flex', flexShrink: 0 }}>
+                      <Trash2 style={{ width: 11, height: 11 }} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
-        {/* Editor body */}
-        <div className="flex-1 flex min-h-0">
+        {/* Code area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: C.bg }}>
+          {/* Breadcrumb */}
+          <div style={{ padding: '8px 20px', fontSize: 11, color: C.dimmer, borderBottom: `1px solid ${C.l4}22`, flexShrink: 0 }}>
+            {activeFile ? activeFile.replace(ROOT_PATH + '/', '') : 'Select a file to edit'}
+          </div>
+
           {loading ? (
-            <div className="flex-1 flex items-center justify-center text-slate-600">
-              <Loader2 className="w-6 h-6 animate-spin" />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.dimmer }}>
+              <Loader2 style={{ width: 24, height: 24 }} className="animate-spin" />
             </div>
-          ) : !openFile ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-700 gap-3">
-              <FileText className="w-12 h-12 opacity-30" />
-              <p className="text-sm">Select a file from the sidebar to edit</p>
-              <p className="text-xs">Supports .md, .txt, .sh, .py, .js, .ts, .json, .yaml and more</p>
+          ) : !activeFile ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: C.dimmer, gap: 12 }}>
+              <FileText style={{ width: 48, height: 48, opacity: 0.3 }} />
+              <div style={{ fontSize: 13 }}>Select a file from the explorer</div>
+              <div style={{ fontSize: 11 }}>Supports .md, .txt, .py, .js, .ts, .json and more</div>
             </div>
           ) : (
-            <>
-              {/* Edit pane */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {(viewMode === 'edit' || viewMode === 'split') && (
-                <textarea
-                  ref={textareaRef}
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  onKeyDown={e => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); }
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const start = e.currentTarget.selectionStart;
-                      const end = e.currentTarget.selectionEnd;
-                      setContent(c => c.slice(0, start) + '  ' + c.slice(end));
-                      setTimeout(() => { if (textareaRef.current) { textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2; } }, 0);
-                    }
-                  }}
-                  className={`bg-[#0d0d17] text-slate-300 font-mono text-sm leading-relaxed p-4 resize-none outline-none border-0 ${
-                    viewMode === 'split' ? 'w-1/2 border-r border-slate-800' : 'flex-1'
-                  }`}
-                  spellCheck={false}
-                />
+                <div style={{ flex: viewMode === 'split' ? '0 0 50%' : 1, display: 'flex', overflow: 'hidden', borderRight: viewMode === 'split' ? `1px solid ${C.l4}22` : 'none' }}>
+                  {/* Line numbers */}
+                  <div ref={lineNumRef} style={{ width: 48, background: C.bg, color: C.dimmer, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", lineHeight: '1.8', padding: '16px 8px 16px 0', textAlign: 'right', userSelect: 'none', flexShrink: 0, overflowY: 'hidden' }}>
+                    {Array.from({ length: lineCount }, (_, i) => (
+                      <div key={i}>{i + 1}</div>
+                    ))}
+                  </div>
+                  <textarea
+                    ref={textareaRef}
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    onScroll={e => { if (lineNumRef.current) lineNumRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); }
+                      if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = e.currentTarget.selectionStart;
+                        const end = e.currentTarget.selectionEnd;
+                        setContent(content.slice(0, start) + '  ' + content.slice(end));
+                        setTimeout(() => { if (textareaRef.current) { textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2; } }, 0);
+                      }
+                    }}
+                    style={{ flex: 1, background: C.bg, color: C.dim, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, lineHeight: 1.8, padding: '16px 20px', resize: 'none', outline: 'none', border: 'none', overflowY: 'auto' }}
+                    spellCheck={false}
+                  />
+                </div>
               )}
-
-              {/* Preview pane */}
               {(viewMode === 'preview' || viewMode === 'split') && (
-                <div className={`overflow-auto p-6 ${viewMode === 'split' ? 'w-1/2' : 'flex-1'}`}>
-                  <div className="markdown-preview text-sm text-slate-300 leading-relaxed max-w-none">
+                <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: C.bg }}>
+                  <div style={{ fontSize: 14, lineHeight: 1.8, color: C.dim }}>
                     <ReactMarkdown>{content}</ReactMarkdown>
                   </div>
                 </div>
               )}
-            </>
-          )}
-
-          {/* AI Chat panel */}
-          {showAI && (
-            <div className="w-80 flex-shrink-0 border-l border-slate-800 flex flex-col bg-[#0a0a14]">
-              {/* AI toolbar */}
-              <div className="px-3 py-2 border-b border-slate-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-slate-400">AI Assistant</span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setShowSettings(v => !v)}
-                      className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300"
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setMessages([])}
-                      className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-red-400"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {showSettings ? (
-                  <div className="space-y-2">
-                    <select
-                      value={modelConfig.provider}
-                      onChange={e => setModelConfig({ ...modelConfig, provider: e.target.value as ModelProvider })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                    >
-                      <option value="ollama">Ollama (local)</option>
-                      <option value="claude">Claude API</option>
-                      <option value="gemini">Gemini API</option>
-                    </select>
-
-                    {modelConfig.provider === 'ollama' && (
-                      <select
-                        value={modelConfig.ollamaModel}
-                        onChange={e => setModelConfig({ ...modelConfig, ollamaModel: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                      >
-                        {ollamaModels.length > 0 ? ollamaModels.map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        )) : (
-                          <option value={modelConfig.ollamaModel}>{modelConfig.ollamaModel}</option>
-                        )}
-                      </select>
-                    )}
-
-                    {modelConfig.provider === 'claude' && (
-                      <>
-                        <input
-                          type="password"
-                          placeholder="Anthropic API key"
-                          value={modelConfig.claudeKey}
-                          onChange={e => setModelConfig({ ...modelConfig, claudeKey: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                        />
-                        <select
-                          value={modelConfig.claudeModel}
-                          onChange={e => setModelConfig({ ...modelConfig, claudeModel: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                        >
-                          <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fast)</option>
-                          <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-                          <option value="claude-opus-4-7">claude-opus-4-7</option>
-                        </select>
-                      </>
-                    )}
-
-                    {modelConfig.provider === 'gemini' && (
-                      <>
-                        <input
-                          type="password"
-                          placeholder="Gemini API key"
-                          value={modelConfig.geminiKey}
-                          onChange={e => setModelConfig({ ...modelConfig, geminiKey: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                        />
-                        <select
-                          value={modelConfig.geminiModel}
-                          onChange={e => setModelConfig({ ...modelConfig, geminiModel: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
-                        >
-                          <option value="gemini-2.0-flash">gemini-2.0-flash (fast)</option>
-                          <option value="gemini-2.0-flash-thinking-exp">gemini-2.0-flash-thinking</option>
-                          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                        </select>
-                      </>
-                    )}
-
-                    <button
-                      onClick={() => setShowSettings(false)}
-                      className="w-full py-1 bg-cyan-700 hover:bg-cyan-600 rounded text-xs text-white"
-                    >
-                      Done
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-600">
-                      {modelConfig.provider === 'ollama'
-                        ? modelConfig.ollamaModel
-                        : modelConfig.provider === 'claude'
-                        ? modelConfig.claudeModel
-                        : modelConfig.geminiModel}
-                    </span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      modelConfig.provider === 'ollama' ? 'bg-green-900 text-green-400' :
-                      modelConfig.provider === 'claude' ? 'bg-orange-900 text-orange-400' :
-                      'bg-blue-900 text-blue-400'
-                    }`}>
-                      {modelConfig.provider}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-auto p-3 space-y-3">
-                {messages.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-slate-600 text-xs">
-                      Ask anything about{openFile ? ' this file' : ' your vault'}
-                    </p>
-                    {openFile && (
-                      <p className="text-slate-700 text-xs mt-1">File context included automatically</p>
-                    )}
-                  </div>
-                )}
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div
-                      className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-cyan-700 text-white'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    {msg.role === 'assistant' && openFile && (() => {
-                      const match = msg.content.match(/```[\w]*\n([\s\S]*?)```/);
-                      return match ? (
-                        <button
-                          onClick={() => setContent(match[1])}
-                          className="mt-1 w-[85%] py-1 bg-cyan-900/60 hover:bg-cyan-800 rounded text-xs text-cyan-300 flex items-center justify-center gap-1 transition-colors"
-                        >
-                          <Save className="w-3 h-3" /> Apply to file
-                        </button>
-                      ) : null;
-                    })()}
-                  </div>
-                ))}
-                {chatLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-800 rounded-xl px-3 py-2">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Chat input */}
-              <div className="px-3 py-2 border-t border-slate-800">
-                <div className="flex gap-2 items-end">
-                  <textarea
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                    }}
-                    placeholder="Ask AI... (Enter to send)"
-                    rows={2}
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 resize-none outline-none focus:border-cyan-700"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!chatInput.trim() || chatLoading}
-                    className="p-2 bg-cyan-700 hover:bg-cyan-600 disabled:bg-slate-800 disabled:text-slate-600 rounded-lg text-white transition-colors"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>
+
+        {/* AI Panel */}
+        {showAI && (
+          <div style={{ width: 300, background: C.l1, borderLeft: `1px solid ${C.l4}22`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            {/* AI header */}
+            <div style={{ padding: '14px 16px', borderBottom: `1px solid ${C.l4}22`, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <Bot style={{ width: 16, height: 16, color: C.amber }} />
+              <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>ASSISTANT</span>
+              <div style={{ marginLeft: 'auto', position: 'relative' }}>
+                <button onClick={() => setShowModelDropdown(!showModelDropdown)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.l2, borderRadius: 6, padding: '4px 10px', fontSize: 11, color: C.dimmer, border: 'none', cursor: 'pointer' }}>
+                  {modelConfig.provider === 'ollama' ? modelConfig.ollamaModel.split(':')[0] : modelConfig.provider}
+                  <ChevronDown style={{ width: 12, height: 12 }} />
+                </button>
+                {showModelDropdown && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: C.l3, borderRadius: 8, overflow: 'hidden', zIndex: 100, minWidth: 180, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                    {showSettings ? (
+                      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <select value={modelConfig.provider} onChange={e => setModelConfig({ ...modelConfig, provider: e.target.value as ModelProvider })}
+                          style={{ background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 6, padding: '6px 8px', fontSize: 12, color: C.text, outline: 'none' }}>
+                          <option value="ollama">Ollama (local)</option>
+                          <option value="claude">Claude API</option>
+                          <option value="gemini">Gemini API</option>
+                        </select>
+                        {modelConfig.provider === 'ollama' && (
+                          <select value={modelConfig.ollamaModel} onChange={e => setModelConfig({ ...modelConfig, ollamaModel: e.target.value })}
+                            style={{ background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 6, padding: '6px 8px', fontSize: 12, color: C.text, outline: 'none' }}>
+                            {ollamaModels.length > 0 ? ollamaModels.map(m => <option key={m} value={m}>{m}</option>) : <option value={modelConfig.ollamaModel}>{modelConfig.ollamaModel}</option>}
+                          </select>
+                        )}
+                        {modelConfig.provider === 'claude' && (
+                          <input type="password" placeholder="Anthropic API key" value={modelConfig.claudeKey} onChange={e => setModelConfig({ ...modelConfig, claudeKey: e.target.value })}
+                            style={{ background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 6, padding: '6px 8px', fontSize: 12, color: C.text, outline: 'none' }} />
+                        )}
+                        <button onClick={() => { setShowSettings(false); setShowModelDropdown(false); }}
+                          style={{ background: `${C.blue}20`, borderRadius: 6, padding: '5px 10px', fontSize: 11, color: C.blue, border: 'none', cursor: 'pointer' }}>Done</button>
+                      </div>
+                    ) : (
+                      <>
+                        {modelConfig.provider === 'ollama' && ollamaModels.map(m => (
+                          <div key={m} onClick={() => { setModelConfig({ ...modelConfig, ollamaModel: m }); setShowModelDropdown(false); }}
+                            style={{ padding: '9px 14px', fontSize: 12, color: m === modelConfig.ollamaModel ? C.blue : C.dim, background: m === modelConfig.ollamaModel ? C.l4 : 'transparent', cursor: 'pointer' }}>{m}</div>
+                        ))}
+                        <div onClick={() => setShowSettings(true)} style={{ padding: '9px 14px', fontSize: 12, color: C.dimmer, cursor: 'pointer', borderTop: `1px solid ${C.l4}22` }}>
+                          <Settings style={{ width: 11, height: 11, display: 'inline', marginRight: 6 }} /> Settings
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {messages.length === 0 && (
+                <div style={{ textAlign: 'center', paddingTop: 32 }}>
+                  <p style={{ fontSize: 12, color: C.dimmer }}>Ask anything about{activeFile ? ' this file' : ' your vault'}</p>
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div key={i}>
+                  {m.role === 'assistant' ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <Bot style={{ width: 14, height: 14, color: C.amber }} />
+                        <span style={{ fontSize: 10, color: C.dimmer, letterSpacing: '0.06em' }}>ASSISTANT</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.7 }}>{m.content}</div>
+                      {activeFile && m.content.match(/```[\w]*\n([\s\S]*?)```/) && (() => {
+                        const match = m.content.match(/```[\w]*\n([\s\S]*?)```/);
+                        return match ? (
+                          <button onClick={() => setContent(match[1])}
+                            style={{ marginTop: 8, width: '100%', padding: '5px 8px', background: `${C.blue}15`, borderRadius: 6, fontSize: 11, color: C.blue, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                            <Save style={{ width: 11, height: 11 }} /> Apply to file
+                          </button>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ background: C.l3, borderRadius: 10, borderBottomRightRadius: 3, padding: '10px 12px', maxWidth: '85%', fontSize: 12, color: C.dim, lineHeight: 1.7 }}>
+                        {m.content}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
+                  {[0,1,2].map(i => <span key={i} className="animate-bounce" style={{ width: 6, height: 6, borderRadius: 3, background: C.dimmer, display: 'inline-block', animationDelay: `${i * 150}ms` }} />)}
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat input */}
+            <div style={{ padding: '12px 14px', borderTop: `1px solid ${C.l4}22`, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder="Ask AI to edit code..."
+                  style={{ flex: 1, background: C.l2, border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: C.text, outline: 'none' }} />
+                <button onClick={sendMessage}
+                  style={{ background: C.blue, borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', border: 'none', cursor: 'pointer' }}>
+                  <Send style={{ width: 14, height: 14, color: C.bg }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Status bar */}
+      <div style={{ height: 28, background: C.l1, borderTop: `1px solid ${C.l4}22`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20, fontSize: 11, color: C.dimmer, flexShrink: 0 }}>
+        {activeFile ? (
+          <>
+            <span>Ln {lineCount}</span>
+            <span>SPACES: 2</span>
+            <span>UTF-8</span>
+            <span style={{ marginLeft: 'auto', color: C.blue }}>{fileName?.split('.').pop()?.toUpperCase() || 'TXT'}</span>
+          </>
+        ) : (
+          <span>No file open</span>
+        )}
       </div>
     </div>
   );

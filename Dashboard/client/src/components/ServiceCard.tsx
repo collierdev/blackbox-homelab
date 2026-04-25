@@ -100,16 +100,16 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
   };
 
   const getStatusBadge = () => {
-    const base = 'px-2 py-0.5 rounded-full text-xs font-medium';
+    const base = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border flex items-center gap-1';
     switch (service.status) {
       case 'running':
-        return `${base} bg-success/20 text-success`;
+        return `${base} bg-[#7dd87d]/10 text-[#7dd87d] border-[#7dd87d]/20`;
       case 'stopped':
-        return `${base} bg-muted text-muted-foreground`;
+        return `${base} bg-surface-variant text-on-surface-variant border-outline-variant/40`;
       case 'error':
-        return `${base} bg-destructive/20 text-destructive`;
+        return `${base} bg-destructive/10 text-destructive border-destructive/30`;
       default:
-        return `${base} bg-warning/20 text-warning`;
+        return `${base} bg-warning/10 text-warning border-warning/20`;
     }
   };
 
@@ -121,11 +121,11 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
   const iconUrl = getIconUrl();
 
   return (
-    <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+    <div className="bg-surface-container-high rounded-lg p-5 hover:bg-surface-bright transition-colors border border-outline-variant/20 relative group">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative group">
+          <div className="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center overflow-hidden relative group">
             {iconUrl ? (
               <img
                 src={iconUrl}
@@ -154,7 +154,7 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNotes(!showNotes)}
-            className={`p-1 rounded hover:bg-secondary transition-colors ${service.notes ? 'text-primary' : 'text-muted-foreground'}`}
+            className={`p-1 rounded hover:bg-surface-container-low transition-colors ${service.notes ? 'text-primary' : 'text-on-surface-variant'}`}
             title="Notes"
           >
             <StickyNote className="w-4 h-4" />
@@ -165,17 +165,17 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
 
       {/* Stats - only show for running services with data */}
       {service.status === 'running' && (service.memoryPercent !== undefined || service.cpuPercent !== undefined) && (
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-2 gap-2 mb-6">
           {service.memoryPercent !== undefined && (
-            <div className="bg-secondary/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+            <div className="bg-surface-container-low rounded-lg p-2">
+              <div className="flex items-center gap-1 text-xs text-on-surface-variant mb-1">
                 <HardDrive className="w-3 h-3" />
                 <span>RAM</span>
               </div>
               <div className="text-sm font-medium">
                 {formatBytes(service.memoryUsage || 0)}
               </div>
-              <div className="w-full bg-secondary rounded-full h-1 mt-1">
+              <div className="w-full bg-surface-variant rounded-full h-1 mt-1">
                 <div
                   className="bg-primary h-1 rounded-full transition-all"
                   style={{ width: `${Math.min(service.memoryPercent, 100)}%` }}
@@ -184,15 +184,15 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
             </div>
           )}
           {service.cpuPercent !== undefined && (
-            <div className="bg-secondary/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+            <div className="bg-surface-container-low rounded-lg p-2">
+              <div className="flex items-center gap-1 text-xs text-on-surface-variant mb-1">
                 <Cpu className="w-3 h-3" />
                 <span>CPU</span>
               </div>
               <div className="text-sm font-medium">
                 {service.cpuPercent.toFixed(1)}%
               </div>
-              <div className="w-full bg-secondary rounded-full h-1 mt-1">
+              <div className="w-full bg-surface-variant rounded-full h-1 mt-1">
                 <div
                   className="bg-primary h-1 rounded-full transition-all"
                   style={{ width: `${Math.min(service.cpuPercent, 100)}%` }}
@@ -205,22 +205,22 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
 
       {/* Uptime */}
       {service.uptime && (
-        <p className="text-sm text-muted-foreground mb-3">{service.uptime}</p>
+        <p className="text-xs text-on-surface-variant mb-3">{service.uptime}</p>
       )}
 
       {/* Notes Panel */}
       {showNotes && (
-        <div className="mb-3 p-3 bg-secondary/50 rounded-lg">
+        <div className="mb-3 p-3 bg-surface-container-low rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Notes</span>
-            <button onClick={() => setShowNotes(false)} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => setShowNotes(false)} className="text-on-surface-variant hover:text-on-surface">
               <X className="w-4 h-4" />
             </button>
           </div>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-background border border-border rounded-lg p-2 text-sm resize-none"
+            className="w-full bg-surface border border-outline-variant/30 rounded-lg p-2 text-sm resize-none"
             rows={3}
             placeholder="Add notes about this service..."
           />
@@ -228,7 +228,7 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
             {service.customIcon && (
               <button
                 onClick={handleClearIcon}
-                className="text-xs text-muted-foreground hover:text-destructive"
+                className="text-xs text-on-surface-variant hover:text-destructive"
               >
                 Clear custom icon
               </button>
@@ -254,12 +254,12 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
       />
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         {service.status !== 'running' && (
           <button
             onClick={() => handleAction('start')}
             disabled={loading !== null}
-            className="flex items-center gap-1 px-3 py-1.5 bg-success/10 hover:bg-success/20 text-success rounded-lg text-sm transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-success rounded text-xs transition-colors disabled:opacity-50"
           >
             {loading === 'start' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -275,7 +275,7 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
             <button
               onClick={() => handleAction('stop')}
               disabled={loading !== null}
-              className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg text-sm transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-destructive rounded text-xs transition-colors disabled:opacity-50"
             >
               {loading === 'stop' ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -288,7 +288,7 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
             <button
               onClick={() => handleAction('restart')}
               disabled={loading !== null}
-              className="flex items-center gap-1 px-3 py-1.5 bg-warning/10 hover:bg-warning/20 text-warning rounded-lg text-sm transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-warning rounded text-xs transition-colors disabled:opacity-50"
             >
               {loading === 'restart' ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -305,7 +305,7 @@ export function ServiceCard({ service, onAction, onNotesUpdate, onIconUpload }: 
             href={service.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm transition-colors ml-auto"
+            className="flex items-center gap-1 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-primary rounded text-xs transition-colors ml-auto"
           >
             <ExternalLink className="w-4 h-4" />
             Open

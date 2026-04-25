@@ -109,12 +109,14 @@ async function getContainerStats(containerId) {
     }
 }
 const SERVICES_CONFIG = {
-    jellyfin: { type: 'docker', url: 'http://192.168.50.39:8096', port: 8096 },
-    n8n: { type: 'docker', url: 'http://192.168.50.39:5678', port: 5678 },
-    portainer: { type: 'docker', url: 'https://192.168.50.39:9443', port: 9443 },
-    homeassistant: { type: 'docker', url: 'http://192.168.50.39:8123', port: 8123 },
-    go2rtc: { type: 'docker', url: 'http://192.168.50.39:1984', port: 1984 },
-    plex: { type: 'systemd', url: 'http://192.168.50.39:32400/web', port: 32400 },
+    jellyfin: { type: 'docker', url: 'http://jellyfin.blackbox', port: 8096 },
+    n8n: { type: 'docker', url: 'http://n8n.blackbox', port: 5678 },
+    portainer: { type: 'docker', url: 'http://blackbox/portainer', port: 9443 },
+    homeassistant: { type: 'docker', url: 'http://ha.blackbox', port: 8123 },
+    go2rtc: { type: 'docker', url: 'http://go2rtc.blackbox', port: 1984 },
+    'pi-dashboard-neo4j': { type: 'docker', url: 'http://blackbox:7474', port: 7474 },
+    neo4j: { type: 'docker', url: 'http://blackbox:7474', port: 7474 },
+    plex: { type: 'systemd', url: 'http://plex.blackbox', port: 32400 },
     ollama: { type: 'systemd', url: 'http://localhost:11434', port: 11434 },
     tailscaled: { type: 'systemd' },
     samba: { type: 'systemd', port: 445 }

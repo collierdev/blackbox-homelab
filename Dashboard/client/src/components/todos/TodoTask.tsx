@@ -30,16 +30,16 @@ export default function TodoTask({
   const hasSubtasks = subtasks.length > 0;
   const completedSubtasks = subtasks.filter(t => t.completed).length;
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityStyle = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'text-red-500 bg-red-50 dark:bg-red-900/20';
+        return { color: '#ffb4ab', background: 'rgba(255, 180, 171, 0.15)' };
       case 'medium':
-        return 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+        return { color: '#f7be1d', background: 'rgba(247, 190, 29, 0.15)' };
       case 'low':
-        return 'text-blue-500 bg-blue-50 dark:bg-blue-900/20';
+        return { color: '#adc6ff', background: 'rgba(173, 198, 255, 0.15)' };
       default:
-        return 'text-gray-500 bg-gray-50 dark:bg-gray-900/20';
+        return { color: '#8892a4', background: 'rgba(136, 146, 164, 0.15)' };
     }
   };
 
@@ -62,22 +62,24 @@ export default function TodoTask({
   return (
     <div className={`${isSubtask ? 'ml-6' : ''}`}>
       <div
-        className={`group flex items-start gap-3 p-3 rounded-lg border transition-all ${
-          task.completed
-            ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-60'
-            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-md'
-        }`}
+        className="group flex items-start gap-3 p-3 rounded-lg transition-all"
+        style={{
+          background: task.completed ? 'rgba(22, 32, 64, 0.5)' : '#162040',
+          border: '1px solid #243356',
+          opacity: task.completed ? 0.6 : 1,
+        }}
       >
         {/* Expand/Collapse Button */}
         {hasSubtasks && !isSubtask && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+            className="p-1 rounded transition-colors flex-shrink-0"
+            style={{ color: '#8892a4' }}
           >
             {isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <ChevronRight className="w-4 h-4" />
             )}
           </button>
         )}
@@ -87,16 +89,17 @@ export default function TodoTask({
           onClick={() => onComplete(task.id)}
           className={`flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-all ${
             hasSubtasks && !isSubtask ? 'ml-0' : !hasSubtasks && !isSubtask ? 'ml-7' : ''
-          } ${
-            task.completed
-              ? 'bg-green-500 text-white'
-              : 'border-2 border-gray-300 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-500'
           }`}
+          style={
+            task.completed
+              ? { background: '#22c55e', color: 'white' }
+              : { border: '2px solid #243356', color: 'transparent' }
+          }
         >
           {task.completed ? (
             <Check className="w-3 h-3" />
           ) : (
-            <Circle className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Circle className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#22c55e' }} />
           )}
         </button>
 
@@ -105,17 +108,17 @@ export default function TodoTask({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <h4
-                className={`text-base font-medium ${
-                  task.completed
-                    ? 'line-through text-gray-500 dark:text-gray-400'
-                    : 'text-gray-900 dark:text-white'
-                }`}
+                className="text-base font-medium"
+                style={{
+                  color: task.completed ? '#8892a4' : '#e2e8f0',
+                  textDecoration: task.completed ? 'line-through' : 'none',
+                }}
               >
                 {task.title}
               </h4>
 
               {task.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm mt-1" style={{ color: '#8892a4' }}>
                   {task.description}
                 </p>
               )}
@@ -124,9 +127,8 @@ export default function TodoTask({
                 {/* Priority Badge */}
                 {task.priority && task.priority !== 'none' && (
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${getPriorityColor(
-                      task.priority
-                    )}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded"
+                    style={getPriorityStyle(task.priority)}
                   >
                     <AlertCircle className="w-3 h-3" />
                     {getPriorityLabel(task.priority)}
@@ -136,11 +138,12 @@ export default function TodoTask({
                 {/* Due Date */}
                 {task.dueDate && (
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded"
+                    style={
                       isOverdue
-                        ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
-                        : 'text-gray-600 bg-gray-50 dark:bg-gray-900/20 dark:text-gray-400'
-                    }`}
+                        ? { color: '#ffb4ab', background: 'rgba(255, 180, 171, 0.15)' }
+                        : { color: '#8892a4', background: 'rgba(136, 146, 164, 0.15)' }
+                    }
                   >
                     <Calendar className="w-3 h-3" />
                     {format(new Date(task.dueDate), 'MMM d, yyyy')}
@@ -150,14 +153,17 @@ export default function TodoTask({
 
                 {/* Subtask Progress */}
                 {hasSubtasks && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs" style={{ color: '#8892a4' }}>
                     {completedSubtasks}/{subtasks.length} subtasks
                   </span>
                 )}
 
                 {/* Todo.md Origin */}
                 {task.todoMdOrigin && (
-                  <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded">
+                  <span
+                    className="text-xs px-2 py-0.5 rounded"
+                    style={{ color: '#c084fc', background: 'rgba(192, 132, 252, 0.15)' }}
+                  >
                     TODO.md
                   </span>
                 )}
@@ -170,25 +176,28 @@ export default function TodoTask({
                 {!isSubtask && (
                   <button
                     onClick={() => setIsAddingSubtask(true)}
-                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="p-1.5 rounded transition-colors"
                     title="Add subtask"
+                    style={{ color: '#8892a4' }}
                   >
-                    <Plus className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={() => onEdit(task.id)}
-                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded transition-colors"
                   title="Edit"
+                  style={{ color: '#8892a4' }}
                 >
-                  <Edit className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => onDelete(task.id)}
-                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded transition-colors"
                   title="Delete"
+                  style={{ color: '#ffb4ab' }}
                 >
-                  <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -206,11 +215,17 @@ export default function TodoTask({
               onChange={(e) => setSubtaskTitle(e.target.value)}
               placeholder="Subtask title..."
               autoFocus
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                background: '#162040',
+                border: '1px solid #243356',
+                color: '#e2e8f0',
+              }}
             />
             <button
               type="submit"
-              className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors"
+              className="px-3 py-2 text-sm rounded transition-colors"
+              style={{ background: '#adc6ff', color: '#0b1326' }}
             >
               Add
             </button>
@@ -220,7 +235,8 @@ export default function TodoTask({
                 setIsAddingSubtask(false);
                 setSubtaskTitle('');
               }}
-              className="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+              className="px-3 py-2 text-sm rounded transition-colors"
+              style={{ background: '#243356', color: '#c2c6d6' }}
             >
               Cancel
             </button>

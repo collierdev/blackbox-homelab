@@ -8,7 +8,7 @@ import {
   getStreamPageUrl,
   getHLSUrl,
   getMJPEGUrl,
-  getSnapshotUrl
+  getSnapshotUrl,
 } from '../config/go2rtc';
 
 const router = Router();
@@ -133,11 +133,11 @@ router.get('/status', async (_req, res) => {
   }
 });
 
-// Proxy snapshot to avoid CORS issues
+// Proxy snapshot to avoid CORS issues (uses internal URL, not proxy prefix)
 router.get('/snapshot/:streamName', async (req, res) => {
   try {
     const streamName = req.params.streamName;
-    const response = await fetch(getSnapshotUrl(streamName));
+    const response = await fetch(`${GO2RTC_URL}/api/frame.jpeg?src=${streamName}`);
 
     if (!response.ok) {
       res.status(response.status).json({ error: 'Failed to get snapshot' });

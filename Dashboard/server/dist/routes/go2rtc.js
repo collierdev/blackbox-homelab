@@ -118,11 +118,11 @@ router.get('/status', async (_req, res) => {
         res.json({ connected: false, error: String(error) });
     }
 });
-// Proxy snapshot to avoid CORS issues
+// Proxy snapshot to avoid CORS issues (uses internal URL, not proxy prefix)
 router.get('/snapshot/:streamName', async (req, res) => {
     try {
         const streamName = req.params.streamName;
-        const response = await fetch((0, go2rtc_1.getSnapshotUrl)(streamName));
+        const response = await fetch(`${go2rtc_1.GO2RTC_URL}/api/frame.jpeg?src=${streamName}`);
         if (!response.ok) {
             res.status(response.status).json({ error: 'Failed to get snapshot' });
             return;

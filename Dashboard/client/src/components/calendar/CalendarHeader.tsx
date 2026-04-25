@@ -1,6 +1,11 @@
 import type { CalendarView, Project } from '../../types';
-import { ChevronLeft, ChevronRight, Plus, Filter, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+
+const C = {
+  l2: '#162040', l3: '#1c2a4a', l4: '#243356',
+  blue: '#adc6ff', text: '#e2e8f0', dimmer: '#8892a4',
+};
 
 interface CalendarHeaderProps {
   currentView: CalendarView;
@@ -10,138 +15,84 @@ interface CalendarHeaderProps {
   onNext: () => void;
   onToday: () => void;
   onNewEvent: () => void;
-  onSettings: () => void;
   projects: Project[];
   selectedProjectFilter: string | null;
   onProjectFilterChange: (projectId: string | null) => void;
 }
 
+const VIEWS: { value: CalendarView; label: string }[] = [
+  { value: 'month',    label: 'Month' },
+  { value: 'week',     label: 'Week' },
+  { value: 'day',      label: 'Day' },
+  { value: '2month',   label: '2 Months' },
+  { value: 'circular', label: 'Circular' },
+];
+
 export default function CalendarHeader({
-  currentView,
-  currentDate,
-  onViewChange,
-  onPrevious,
-  onNext,
-  onToday,
-  onNewEvent,
-  onSettings,
-  projects,
-  selectedProjectFilter,
-  onProjectFilterChange,
+  currentView, currentDate, onViewChange, onPrevious, onNext, onToday,
+  projects, selectedProjectFilter, onProjectFilterChange,
 }: CalendarHeaderProps) {
-  const getDateRangeText = () => {
+  const getTitle = () => {
     switch (currentView) {
-      case 'month':
-        return format(currentDate, 'MMMM yyyy');
-      case 'week':
-        return format(currentDate, 'MMM d, yyyy');
-      case 'day':
-        return format(currentDate, 'MMMM d, yyyy');
+      case 'month':    return format(currentDate, 'MMMM yyyy');
+      case 'week':     return format(currentDate, 'MMM d, yyyy');
+      case 'day':      return format(currentDate, 'MMMM d, yyyy');
       case '2month':
-        return format(currentDate, 'MMM yyyy') + ' - ' + format(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1), 'MMM yyyy');
-      case 'circular':
-        return format(currentDate, 'yyyy');
-      default:
-        return '';
+        return format(currentDate, 'MMM yyyy') + ' – ' +
+               format(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1), 'MMM yyyy');
+      case 'circular': return format(currentDate, 'yyyy');
+      default: return '';
     }
   };
 
-  const views: { value: CalendarView; label: string }[] = [
-    { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
-    { value: '2month', label: '2 Months' },
-    { value: 'circular', label: 'Circular' },
-  ];
-
   return (
-    <div className="flex flex-col gap-4 p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50">
-      {/* Top Row: Date Navigation and Actions */}
-      <div className="flex items-center justify-between">
-        {/* Date Navigation */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onToday}
-            className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all shadow-sm hover:shadow"
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexShrink: 0 }}>
+      {/* Left: nav + title + Today */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={onPrevious} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: C.dimmer, cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.background = C.l3)}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <ChevronLeft style={{ width: 16, height: 16 }} />
+        </button>
+        <button onClick={onNext} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 6, color: C.dimmer, cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.background = C.l3)}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <ChevronRight style={{ width: 16, height: 16 }} />
+        </button>
+        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, minWidth: 160 }}>
+          {getTitle()}
+        </span>
+        <button onClick={onToday} style={{ fontSize: 12, color: C.dimmer, padding: '4px 12px', background: C.l2, borderRadius: 6, cursor: 'pointer', border: 'none' }}>
+          Today
+        </button>
+        {projects.length > 0 && (
+          <select
+            value={selectedProjectFilter || ''}
+            onChange={e => onProjectFilterChange(e.target.value || null)}
+            style={{ fontSize: 12, color: C.dimmer, background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 6, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}
           >
-            Today
-          </button>
-
-          <div className="flex items-center gap-0.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
-            <button
-              onClick={onPrevious}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-l-lg transition-colors"
-              aria-label="Previous"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-            <button
-              onClick={onNext}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-r-lg transition-colors"
-              aria-label="Next"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
-          </div>
-
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white min-w-[200px]">
-            {getDateRangeText()}
-          </h2>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Project Filter */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <select
-              value={selectedProjectFilter || ''}
-              onChange={(e) => onProjectFilterChange(e.target.value || null)}
-              className="pl-9 pr-8 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors"
-            >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Settings Button */}
-          <button
-            onClick={onSettings}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            aria-label="Calendar settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
-          {/* New Event Button */}
-          <button
-            onClick={onNewEvent}
-            className="flex items-center gap-2 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm hover:shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            New Event
-          </button>
-        </div>
+            <option value="">All Projects</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        )}
       </div>
 
-      {/* Bottom Row: View Selector */}
-      <div className="flex gap-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-1 shadow-sm">
-        {views.map((view) => (
+      {/* Right: view tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {VIEWS.map(v => (
           <button
-            key={view.value}
-            onClick={() => onViewChange(view.value)}
-            className={`flex-1 px-4 py-2 text-sm font-semibold rounded-md transition-all ${
-              currentView === view.value
-                ? 'bg-blue-500 text-white shadow-md transform scale-[1.02]'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white'
-            }`}
+            key={v.value}
+            onClick={() => onViewChange(v.value)}
+            style={{
+              padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', border: 'none', transition: 'all 0.15s',
+              background: currentView === v.value ? C.l4 : 'transparent',
+              color: currentView === v.value ? C.text : C.dimmer,
+            }}
           >
-            {view.label}
+            {v.label}
           </button>
         ))}
       </div>

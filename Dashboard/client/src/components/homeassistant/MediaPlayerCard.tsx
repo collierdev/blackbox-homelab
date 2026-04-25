@@ -31,31 +31,30 @@ export function MediaPlayerCard({ player, onAction, onVolume }: MediaPlayerCardP
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
+    <div className="bg-surface-container-high border border-white/5 rounded-lg p-4 hover:bg-surface-bright transition-colors">
       <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg ${isPlaying ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+        <div className={`p-2 rounded-lg ${isPlaying ? 'bg-primary/20 text-primary' : 'bg-surface-container-low text-on-surface-variant'}`}>
           <Music className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm truncate">{friendlyName}</h3>
+          <h3 className="font-medium text-sm truncate text-on-surface">{friendlyName}</h3>
           {mediaTitle ? (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-on-surface-variant truncate">
               {mediaTitle}{mediaArtist ? ` - ${mediaArtist}` : ''}
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground capitalize">{player.state}</p>
+            <p className="text-xs text-on-surface-variant capitalize">{player.state}</p>
           )}
         </div>
       </div>
 
       {!isOff && (
         <>
-          {/* Playback controls */}
           <div className="flex items-center justify-center gap-2 mb-3">
             <button
               onClick={() => handleAction('previous')}
               disabled={loading !== null}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-surface-container-low transition-colors disabled:opacity-50 text-on-surface-variant"
             >
               <SkipBack className="w-5 h-5" />
             </button>
@@ -63,30 +62,25 @@ export function MediaPlayerCard({ player, onAction, onVolume }: MediaPlayerCardP
               onClick={() => handleAction('play_pause')}
               disabled={loading !== null}
               className={`p-3 rounded-full transition-colors disabled:opacity-50 ${
-                isPlaying ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                isPlaying ? 'bg-primary text-[#002e6a]' : 'bg-surface-container-low hover:bg-surface-container text-on-surface'
               }`}
             >
-              {isPlaying ? (
-                <Pause className="w-5 h-5" />
-              ) : (
-                <Play className="w-5 h-5" />
-              )}
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
             </button>
             <button
               onClick={() => handleAction('next')}
               disabled={loading !== null}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-surface-container-low transition-colors disabled:opacity-50 text-on-surface-variant"
             >
               <SkipForward className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Volume control */}
           <div className="flex items-center gap-3">
             {isMuted ? (
-              <VolumeX className="w-4 h-4 text-muted-foreground" />
+              <VolumeX className="w-4 h-4 text-on-surface-variant" />
             ) : (
-              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <Volume2 className="w-4 h-4 text-on-surface-variant" />
             )}
             <input
               type="range"
@@ -94,15 +88,15 @@ export function MediaPlayerCard({ player, onAction, onVolume }: MediaPlayerCardP
               max="100"
               value={volumePercent}
               onChange={handleVolumeChange}
-              className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              className="flex-1 h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <span className="text-xs text-muted-foreground w-8">{volumePercent}%</span>
+            <span className="text-xs text-on-surface-variant w-8">{volumePercent}%</span>
           </div>
         </>
       )}
 
       {isOff && (
-        <div className="text-center text-muted-foreground text-sm py-2">
+        <div className="text-center text-on-surface-variant text-sm py-2">
           {player.state === 'unavailable' ? 'Unavailable' : 'Off'}
         </div>
       )}

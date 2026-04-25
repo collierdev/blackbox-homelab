@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Cpu, MemoryStick, HardDrive, Thermometer, Clock, Network, ArrowUpDown, ExternalLink } from 'lucide-react';
-import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import type { SystemStats as Stats } from '../types';
-import { StatsCard, ProgressBar } from './StatsCard';
-import { CollapsiblePanel } from './CollapsiblePanel';
+import { Cpu, MemoryStick, HardDrive, Thermometer, Clock, Network, Lightbulb, Wind, Lock, Droplet } from 'lucide-react';
+import type { SystemStats as Stats, HADevices, HAStatus } from '../types';
+import { StatsCard } from './StatsCard';
+import { Services } from './Services';
+import { CamerasSection } from './go2rtc/CamerasSection';
 
 interface SystemStatsProps {
   stats: Stats | null;
+  haDevices?: HADevices | null;
+  haStatus?: HAStatus;
 }
 
 function formatBytes(bytes: number): string {
@@ -18,311 +18,170 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-function formatUptime(seconds: number): string {
+function formatUptimeStr(seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (days > 0) return `${days}d ${hours}h`;
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
 }
 
-function getTempColor(temp: number): string {
-  if (temp < 50) return 'text-success';
-  if (temp < 70) return 'text-warning';
-  return 'text-destructive';
-}
-
-type SortField = 'name' | 'memory' | 'memoryPercent' | 'cpu';
-type SortDirection = 'asc' | 'desc';
-
-export function SystemStats({ stats }: SystemStatsProps) {
-  const [showProcesses, setShowProcesses] = useState(false);
-  const [showServices, setShowServices] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('memoryPercent');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [panelOrder, setPanelOrder] = useState<string[]>(['network-services', 'process-memory']);
-
-  // Initialize sensors for drag
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
-  );
-
-  // Load panel order from localStorage
-  useEffect(() => {
-    const savedOrder = localStorage.getItem('dashboard-panel-order');
-    if (savedOrder) {
-      try {
-        setPanelOrder(JSON.parse(savedOrder));
-      } catch {
-        // Use default if parsing fails
-      }
-    }
-  }, []);
-
-  // Save panel order to localStorage
-  const handlePanelDragEnd = (event: any) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = panelOrder.indexOf(active.id);
-    const newIndex = panelOrder.indexOf(over.id);
-
-    const newOrder = arrayMove(panelOrder, oldIndex, newIndex);
-    setPanelOrder(newOrder);
-    localStorage.setItem('dashboard-panel-order', JSON.stringify(newOrder));
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedProcesses = stats?.processes?.slice().sort((a, b) => {
-    const multiplier = sortDirection === 'asc' ? 1 : -1;
-    if (sortField === 'name') {
-      return multiplier * a.name.localeCompare(b.name);
-    }
-    return multiplier * (a[sortField] - b[sortField]);
-  }) || [];
-
+export function SystemStats({ stats, haDevices, haStatus }: SystemStatsProps) {
   if (!stats) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-card rounded-xl border border-border p-5 animate-pulse">
-            <div className="h-4 bg-secondary rounded w-1/2 mb-4" />
-            <div className="h-8 bg-secondary rounded w-3/4" />
-          </div>
-        ))}
+      <div className="h-full overflow-y-auto" style={{ padding: '28px 32px' }}>
+        <div className="flex gap-3">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="flex-1 rounded-xl animate-pulse" style={{ background: '#162040', height: '120px' }} />
+          ))}
+        </div>
       </div>
     );
   }
 
+  const cpuUsage = stats.cpu.usage;
+  const memUsage = stats.memory.usedPercent;
+  const diskUsage = stats.disk.usedPercent;
+  const temp = stats.cpu.temperature;
+  const uptimeStr = formatUptimeStr(stats.uptime);
+
+  const cpuColor = cpuUsage < 50 ? '#22c55e' : cpuUsage < 80 ? '#f7be1d' : '#ffb4ab';
+  const memColor = memUsage < 50 ? '#22c55e' : memUsage < 80 ? '#f7be1d' : '#ffb4ab';
+  const diskColor = diskUsage < 50 ? '#22c55e' : diskUsage < 80 ? '#f7be1d' : '#ffb4ab';
+  const tempColor = temp < 50 ? '#22c55e' : temp < 70 ? '#f7be1d' : '#ffb4ab';
+
+  const lightsOn = haDevices?.lights?.filter(l => l.state === 'on').length || 0;
+  const mediaPlaying = haDevices?.media_players?.filter(m => m.state === 'playing').length || 0;
+  const climateStat = haDevices?.climate?.[0]?.attributes?.temperature
+    ? `${haDevices.climate[0].attributes.temperature}°`
+    : '--';
+  const switchesOn = haDevices?.switches?.filter(s => s.state === 'on').length || 0;
+
+  const networkInterfaces = stats.network?.interfaces || [];
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="CPU" icon={<Cpu className="w-5 h-5" />}>
-          <ProgressBar value={stats.cpu.usage} label="Usage" />
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Cores:</span>
-              <span className="ml-1 font-medium">{stats.cpu.cores}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Speed:</span>
-              <span className="ml-1 font-medium">{stats.cpu.speed} GHz</span>
-            </div>
-          </div>
-        </StatsCard>
-
-        <StatsCard title="Memory" icon={<MemoryStick className="w-5 h-5" />}>
-          <ProgressBar value={stats.memory.usedPercent} label="Usage" />
-          <div className="mt-3 text-sm">
-            <span className="text-muted-foreground">
-              {formatBytes(stats.memory.used)} / {formatBytes(stats.memory.total)}
-            </span>
-          </div>
-        </StatsCard>
-
-        <StatsCard title="Disk" icon={<HardDrive className="w-5 h-5" />}>
-          <ProgressBar value={stats.disk.usedPercent} label="Usage" />
-          <div className="mt-3 text-sm">
-            <span className="text-muted-foreground">
-              {formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
-            </span>
-          </div>
-        </StatsCard>
-
-        <StatsCard title="Temperature" icon={<Thermometer className="w-5 h-5" />}>
-          <div className="flex items-end gap-2">
-            <span className={`text-4xl font-bold ${getTempColor(stats.cpu.temperature)}`}>
-              {stats.cpu.temperature.toFixed(1)}
-            </span>
-            <span className="text-xl text-muted-foreground mb-1">°C</span>
-          </div>
-          <div className="mt-2 text-sm text-muted-foreground">CPU Temperature</div>
-        </StatsCard>
+    <div style={{ padding: '28px 32px', overflowY: 'auto', height: '100%' }}>
+      {/* Page header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 800, marginBottom: '4px', color: '#e2e8f0' }}>Pi Dashboard</h1>
+          <div style={{ fontSize: '12px', color: '#8892a4', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Blackbox Environment</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#162040', borderRadius: '8px', padding: '8px 16px' }}>
+          <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '4px', background: haStatus?.connected !== false ? '#22c55e' : '#ffb4ab', boxShadow: `0 0 6px ${haStatus?.connected !== false ? '#22c55e' : '#ffb4ab'}` }} />
+          <span style={{ fontSize: '13px', color: haStatus?.connected !== false ? '#22c55e' : '#ffb4ab', fontWeight: 600, letterSpacing: '0.04em' }}>{haStatus?.connected !== false ? 'CONNECTED' : 'OFFLINE'}</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <StatsCard title="Uptime" icon={<Clock className="w-5 h-5" />}>
-          <div className="text-2xl font-bold text-foreground">
-            {formatUptime(stats.uptime)}
+      {/* 5 stat cards */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <StatsCard
+          label="CPU Usage"
+          icon={<Cpu className="w-[18px] h-[18px]" />}
+          value={cpuUsage.toFixed(0)}
+          unit="%"
+          accentColor={cpuColor}
+          progress={cpuUsage}
+          progressColor={cpuColor}
+          subtext={`${stats.cpu.cores} cores · ${stats.cpu.speed} GHz`}
+        />
+        <StatsCard
+          label="Memory"
+          icon={<MemoryStick className="w-[18px] h-[18px]" />}
+          value={memUsage.toFixed(0)}
+          unit="%"
+          accentColor={memColor}
+          progress={memUsage}
+          progressColor={memColor}
+          subtext={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`}
+        />
+        <StatsCard
+          label="Disk I/O"
+          icon={<HardDrive className="w-[18px] h-[18px]" />}
+          value={diskUsage.toFixed(0)}
+          unit="%"
+          accentColor={diskColor}
+          progress={diskUsage}
+          progressColor={diskColor}
+          subtext={`${formatBytes(stats.disk.used)} / ${formatBytes(stats.disk.total)}`}
+        />
+        <StatsCard
+          label="Core Temp"
+          icon={<Thermometer className="w-[18px] h-[18px]" />}
+          value={temp.toFixed(1)}
+          unit="°C"
+          accentColor={tempColor}
+          progress={(temp / 100) * 100}
+          progressColor={tempColor}
+          subtext="CPU Temperature"
+        />
+        {/* Uptime card */}
+        <div style={{ background: '#1c2a4a', borderRadius: '12px', padding: '20px 24px', flex: 1 }}>
+          <div style={{ fontSize: '11px', letterSpacing: '0.08em', color: '#f7be1d', textTransform: 'uppercase', fontWeight: 500, marginBottom: '8px' }}>System Uptime</div>
+          <Clock style={{ width: '22px', height: '22px', color: '#f7be1d' }} />
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '32px', fontWeight: 800, marginTop: '8px', color: '#e2e8f0' }}>
+            {uptimeStr}
           </div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            {stats.platform}
-          </div>
-        </StatsCard>
-
-        <StatsCard title="Network Interfaces" icon={<Network className="w-5 h-5" />}>
-          <div className="space-y-2">
-            {stats.network.interfaces.slice(0, 4).map(iface => (
-              <div key={iface.name} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{iface.name}</span>
-                <span className="font-mono font-medium">{iface.ip4}</span>
-              </div>
-            ))}
-          </div>
-        </StatsCard>
+          <div style={{ fontSize: '11px', color: '#8892a4', marginTop: '6px' }}>{stats.platform}</div>
+        </div>
       </div>
 
-      {/* Draggable Panels */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePanelDragEnd}>
-        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
-          <div className="space-y-4">
-            {panelOrder.map(panelId => {
-              if (panelId === 'network-services') {
-                return (
-                  <CollapsiblePanel
-                    key={panelId}
-                    id={panelId}
-                    title="Network Services"
-                    icon={<Network className="w-5 h-5 text-primary" />}
-                    badge={`${stats.network.services?.length || 0} services`}
-                    isOpen={showServices}
-                    onToggle={() => setShowServices(!showServices)}
-                  >
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-secondary/50">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Service</th>
-                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">IP Address</th>
-                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Port</th>
-                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">URL</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {stats.network.services?.map((service, idx) => (
-                            <tr key={idx} className="hover:bg-secondary/30 transition-colors">
-                              <td className="px-4 py-3 font-medium">{service.name}</td>
-                              <td className="px-4 py-3 font-mono text-muted-foreground">{service.ip}</td>
-                              <td className="px-4 py-3 font-mono">{service.port}</td>
-                              <td className="px-4 py-3">
-                                {service.url && !service.url.startsWith('\\') ? (
-                                  <a
-                                    href={service.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-primary hover:underline"
-                                  >
-                                    {service.url}
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                ) : (
-                                  <span className="font-mono text-muted-foreground">{service.url || '-'}</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CollapsiblePanel>
-                );
-              } else if (panelId === 'process-memory') {
-                return (
-                  <CollapsiblePanel
-                    key={panelId}
-                    id={panelId}
-                    title="Memory Usage by Process"
-                    icon={<MemoryStick className="w-5 h-5 text-primary" />}
-                    badge={`Top ${sortedProcesses.length} processes`}
-                    isOpen={showProcesses}
-                    onToggle={() => setShowProcesses(!showProcesses)}
-                  >
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-secondary/50">
-                          <tr>
-                            <th
-                              className="text-left px-4 py-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                              onClick={() => handleSort('name')}
-                            >
-                              <div className="flex items-center gap-1">
-                                Process
-                                <ArrowUpDown className="w-3 h-3" />
-                              </div>
-                            </th>
-                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">PID</th>
-                            <th
-                              className="text-left px-4 py-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                              onClick={() => handleSort('memory')}
-                            >
-                              <div className="flex items-center gap-1">
-                                Memory
-                                <ArrowUpDown className="w-3 h-3" />
-                              </div>
-                            </th>
-                            <th
-                              className="text-left px-4 py-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                              onClick={() => handleSort('memoryPercent')}
-                            >
-                              <div className="flex items-center gap-1">
-                                Mem %
-                                <ArrowUpDown className="w-3 h-3" />
-                              </div>
-                            </th>
-                            <th
-                              className="text-left px-4 py-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                              onClick={() => handleSort('cpu')}
-                            >
-                              <div className="flex items-center gap-1">
-                                CPU %
-                                <ArrowUpDown className="w-3 h-3" />
-                              </div>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {sortedProcesses.map((proc, idx) => (
-                            <tr key={`${proc.pid}-${idx}`} className="hover:bg-secondary/30 transition-colors">
-                              <td className="px-4 py-3 font-medium">{proc.name}</td>
-                              <td className="px-4 py-3 font-mono text-muted-foreground">{proc.pid}</td>
-                              <td className="px-4 py-3 font-mono">{formatBytes(proc.memory)}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full bg-primary rounded-full transition-all"
-                                      style={{ width: `${Math.min(proc.memoryPercent * 10, 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="font-mono text-sm">{proc.memoryPercent.toFixed(1)}%</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full bg-warning rounded-full transition-all"
-                                      style={{ width: `${Math.min(proc.cpu, 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="font-mono text-sm">{proc.cpu.toFixed(1)}%</span>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CollapsiblePanel>
-                );
-              }
-              return null;
-            })}
+      {/* 2-column layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px' }}>
+        {/* Left column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
+          <Services />
+          <CamerasSection defaultExpanded={true} />
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+          {/* Smart Home State */}
+          <div style={{ background: '#162040', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', letterSpacing: '0.08em', color: '#8892a4', textTransform: 'uppercase', fontWeight: 500, marginBottom: '14px' }}>Smart Home State</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {[
+                { label: 'LIGHTS ON', val: String(lightsOn), color: '#f7be1d', icon: <Lightbulb style={{ width: '20px', height: '20px' }} /> },
+                { label: 'CLIMATE', val: climateStat, color: '#adc6ff', icon: <Wind style={{ width: '20px', height: '20px' }} /> },
+                { label: 'SWITCHES ON', val: String(switchesOn), color: '#adc6ff', icon: <Lock style={{ width: '20px', height: '20px' }} /> },
+                { label: 'MEDIA', val: mediaPlaying > 0 ? String(mediaPlaying) : 'IDLE', color: '#22c55e', icon: <Droplet style={{ width: '20px', height: '20px' }} /> },
+              ].map(x => (
+                <div key={x.label} style={{ background: '#1c2a4a', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                  <div style={{ color: x.color, display: 'flex', justifyContent: 'center' }}>{x.icon}</div>
+                  <div style={{ fontSize: '10px', color: '#8892a4', letterSpacing: '0.06em', marginTop: '6px', marginBottom: '4px' }}>{x.label}</div>
+                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 700, color: x.color }}>{x.val}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </SortableContext>
-      </DndContext>
+
+          {/* Network Interfaces */}
+          <div style={{ background: '#162040', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+              <Network style={{ width: '14px', height: '14px', color: '#8892a4' }} />
+              <span style={{ fontSize: '12px', letterSpacing: '0.08em', color: '#8892a4', textTransform: 'uppercase', fontWeight: 500 }}>Network Interfaces</span>
+            </div>
+            {networkInterfaces.length > 0 ? networkInterfaces.map((iface, i) => {
+              const isActive = !!iface.ip4 && iface.ip4 !== '';
+              return (
+                <div key={iface.name} style={{ paddingTop: i ? '12px' : 0, marginTop: i ? '12px' : 0, borderTop: i ? '1px solid #243356' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#e2e8f0' }}>{iface.name}</span>
+                    <span style={{ fontSize: '12px', color: isActive ? '#22c55e' : '#ffb4ab' }}>{isActive ? 'Active' : 'Down'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
+                    <span style={{ fontSize: '12px', color: '#8892a4' }}>{iface.ip4 || 'Disconnected'}</span>
+                    <span style={{ fontSize: '12px', color: '#8892a4' }}>{iface.speed ? `${iface.speed} MB/s` : ''}</span>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div style={{ fontSize: '12px', color: '#8892a4' }}>No interfaces detected</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

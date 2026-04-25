@@ -1,0 +1,57 @@
+# Prompt for Claude: Rebuilding the "Pi Dashboard" Front-end
+
+**Objective:** 
+Rebuild a high-fidelity, interactive front-end for a Raspberry Pi home server dashboard named "Pi Dashboard" (hostname: "blackbox"). The design must follow the "Blackbox Slate" aesthetic: a sophisticated, dark-mode-first interface using a deep navy/slate palette, soft rounded corners (8px-12px), and high-contrast typography.
+
+## 1. Visual Identity & Design Tokens (Blackbox Slate)
+- **Palette:** 
+  - Background: `#0b1326` (Deep Navy)
+  - Surface/Cards: `#161e2d` (Slate-800)
+  - Borders: `rgba(255, 255, 255, 0.05)`
+  - Primary Accent: `#adc6ff` (Soft Blue)
+  - Secondary Accent: `#f7be1d` (Tactical Amber)
+  - Success: `#22c55e` | Warning: `#f59e0b` | Danger: `#ef4444`
+- **Typography:** Use 'Plus Jakarta Sans' for headings and 'Inter' for body text. Headings should be tight-tracked and bold.
+- **Components:** High-fidelity glassmorphism (backdrop-blur), tonal shifting for hierarchy, and subtle 1px borders.
+
+## 2. Global Chrome & Navigation
+- **Top Bar:** Sticky, high-z-index. Features the "Intelligence Console" logo, a green connectivity status indicator, and system-wide controls (Theme toggle, Alerts, Settings).
+- **Sidebar:** A collapsed/expandable side nav with icons for: System, Smart Home, Calendar, Planner, Editor, and AI Chat. Use a "tonal stack" approach where the active tab has a distinct background and left-accent border.
+
+## 3. Screen-Specific Requirements
+
+### A. System Dashboard (Central Hub)
+- **Stat Grid:** 4 columns of responsive cards showing live CPU Usage (with progress bar), Memory, Disk, and Temperature.
+- **Service Management:** A 3-column grid of "Service Cards" (Docker/Systemd). Each card must show a status badge (Running/Stopped), RAM/CPU mini-stats, and action buttons (Stop, Restart, Open).
+- **Security Feeds:** A grid showing live camera feeds with red "LIVE" overlays and overlay controls.
+
+### B. AI Agentic Editor (AI-First IDE)
+- **3-Panel Layout:** 
+  - **Left:** File explorer with "Projects" vs "System Files" segmentation and status dots for network mounts.
+  - **Center:** Monaco-style editor with syntax highlighting and a "Command Bar" for agentic edits.
+  - **Right:** A deep-integrated AI Assistant panel with model selectors (Ollama/Claude) and context-aware chat buttons ("Explain Code", "Apply to Editor").
+
+### C. Smart Home Controls
+- **Hierarchy:** Group controls by "Light Fixtures," "Individual Lights," and "Switches/Outlets."
+- **Interaction:** Use yellow/amber states for active lights. Include smooth range sliders for brightness and gear icons for advanced color/effect modes.
+
+### D. Daily Planner (Signage Mode)
+- **Context:** Optimized for a 27" landscape display (Kiosk mode).
+- **Layout:** High-density 3-column grid.
+  - **Timeline:** Vertical schedule with a moving "Current Time" glowing line.
+  - **Center Focus:** Large "Current Focus" countdown and "Daily Routine" progress bars.
+  - **Intelligence:** A "Daily Note Snippet" area pulling markdown content from a vault.
+
+### E. Calendar & Tasks
+- **Hybrid View:** A pill-toggle at the top to switch between a full-month grid (Calendar) and a project-segmented Task list.
+- **Task List:** Should support priority sorting, project tagging, and empty states.
+
+### F. AI Chat Interface
+- **Context Integration:** A centered chat container that supports "Context Chips" (e.g., "Schedule Attached," "System Status Attached").
+- **Styling:** Alternating message bubbles with full markdown/code-block support.
+
+## 4. Technical Implementation Notes
+- Use **Tailwind CSS** for all styling.
+- Implement **Lucide React** or **Google Material Icons** for iconography.
+- Ensure all sections are responsive and follow a clean grid system.
+- Add a floating notification bell that triggers a right-hand slide-out "Tactical Alerts" drawer.

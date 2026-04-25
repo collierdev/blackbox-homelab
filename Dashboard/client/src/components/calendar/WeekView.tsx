@@ -69,14 +69,14 @@ export default function WeekView({
         .attr('y', -40)
         .attr('width', dayWidth - 2)
         .attr('height', 35)
-        .attr('fill', isToday ? 'rgba(59, 130, 246, 0.1)' : 'transparent')
+        .attr('fill', isToday ? 'rgba(173, 198, 255, 0.15)' : 'transparent')
         .attr('rx', 4);
 
       g.append('text')
         .attr('x', i * dayWidth + dayWidth / 2)
         .attr('y', -22)
         .attr('text-anchor', 'middle')
-        .attr('fill', isToday ? 'rgb(59, 130, 246)' : 'currentColor')
+        .attr('fill', isToday ? '#adc6ff' : '#c2c6d6')
         .attr('font-size', '12px')
         .attr('font-weight', '600')
         .text(format(day, 'EEE'));
@@ -85,7 +85,7 @@ export default function WeekView({
         .attr('x', i * dayWidth + dayWidth / 2)
         .attr('y', -8)
         .attr('text-anchor', 'middle')
-        .attr('fill', isToday ? 'rgb(59, 130, 246)' : 'currentColor')
+        .attr('fill', isToday ? '#adc6ff' : '#e2e8f0')
         .attr('font-size', '18px')
         .attr('font-weight', isToday ? '700' : '500')
         .text(format(day, 'd'));
@@ -97,9 +97,8 @@ export default function WeekView({
         .attr('x', -10)
         .attr('y', hour * hourHeight + 12)
         .attr('text-anchor', 'end')
-        .attr('fill', 'currentColor')
+        .attr('fill', '#8892a4')
         .attr('font-size', '11px')
-        .attr('opacity', 0.6)
         .text(`${hour.toString().padStart(2, '0')}:00`);
     });
 
@@ -110,9 +109,9 @@ export default function WeekView({
         .attr('x2', innerWidth)
         .attr('y1', hour * hourHeight)
         .attr('y2', hour * hourHeight)
-        .attr('stroke', 'currentColor')
-        .attr('stroke-width', hour === 0 ? 2 : 0.5)
-        .attr('opacity', hour === 0 ? 0.3 : 0.1);
+        .attr('stroke', '#243356')
+        .attr('stroke-width', hour === 0 ? 1.5 : 0.5)
+        .attr('opacity', 1);
     });
 
     weekDays.forEach((_, i) => {
@@ -121,9 +120,9 @@ export default function WeekView({
         .attr('x2', i * dayWidth)
         .attr('y1', 0)
         .attr('y2', innerHeight)
-        .attr('stroke', 'currentColor')
+        .attr('stroke', '#243356')
         .attr('stroke-width', 0.5)
-        .attr('opacity', 0.1);
+        .attr('opacity', 1);
     });
 
     // Click areas for creating events
@@ -212,7 +211,7 @@ export default function WeekView({
         ref={svgRef}
         width={dimensions.width}
         height={Math.max(dimensions.height, 1000)}
-        className="text-gray-900 dark:text-white"
+        style={{ background: '#0f1a2e' }}
       />
     </div>
   );

@@ -26,6 +26,16 @@ export declare function turnOn(entityId: string, data?: Record<string, unknown>)
 export declare function turnOff(entityId: string): Promise<HAEntityState[]>;
 export declare function setLightBrightness(entityId: string, brightness: number): Promise<HAEntityState[]>;
 export declare function setLightColor(entityId: string, rgbColor: [number, number, number]): Promise<HAEntityState[]>;
+export declare function setLightHSColor(entityId: string, hsColor: [number, number]): Promise<HAEntityState[]>;
+export declare function setLightColorTemp(entityId: string, kelvin: number): Promise<HAEntityState[]>;
+export declare function setLightEffect(entityId: string, effect: string): Promise<HAEntityState[]>;
+export declare function setMultipleLightsBrightness(entityIds: string[], brightness: number): Promise<HAEntityState[]>;
+export declare function setMultipleLightsColor(entityIds: string[], rgbColor: [number, number, number]): Promise<HAEntityState[]>;
+export declare function setMultipleLightsHSColor(entityIds: string[], hsColor: [number, number]): Promise<HAEntityState[]>;
+export declare function setMultipleLightsColorTemp(entityIds: string[], kelvin: number): Promise<HAEntityState[]>;
+export declare function toggleMultipleLights(entityIds: string[]): Promise<HAEntityState[]>;
+export declare function turnOnMultipleLights(entityIds: string[]): Promise<HAEntityState[]>;
+export declare function turnOffMultipleLights(entityIds: string[]): Promise<HAEntityState[]>;
 export declare function setClimateTemperature(entityId: string, temperature: number): Promise<HAEntityState[]>;
 export declare function setClimateHvacMode(entityId: string, hvacMode: string): Promise<HAEntityState[]>;
 export declare function mediaPlayPause(entityId: string): Promise<HAEntityState[]>;

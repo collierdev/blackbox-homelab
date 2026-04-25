@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Intelligence Console - IDE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#002e6a",
+                      "outline-variant": "#424754",
+                      "tertiary": "#f7be1d",
+                      "primary-container": "#4d8eff",
+                      "inverse-on-surface": "#283044",
+                      "secondary-fixed": "#d5e3fd",
+                      "on-secondary-fixed-variant": "#3a485c",
+                      "secondary-fixed-dim": "#b9c7e0",
+                      "on-surface": "#dae2fd",
+                      "inverse-primary": "#005ac2",
+                      "secondary-container": "#3c4a5e",
+                      "primary": "#adc6ff",
+                      "surface": "#0b1326",
+                      "on-tertiary-fixed-variant": "#5a4300",
+                      "on-tertiary-container": "#372700",
+                      "outline": "#8c909f",
+                      "on-secondary-fixed": "#0d1c2f",
+                      "on-background": "#dae2fd",
+                      "error": "#ffb4ab",
+                      "tertiary-container": "#b68a00",
+                      "on-secondary-container": "#abb9d2",
+                      "on-primary-fixed": "#001a42",
+                      "surface-tint": "#adc6ff",
+                      "surface-dim": "#0b1326",
+                      "on-tertiary": "#3f2e00",
+                      "on-surface-variant": "#c2c6d6",
+                      "surface-container-low": "#131b2e",
+                      "primary-fixed": "#d8e2ff",
+                      "inverse-surface": "#dae2fd",
+                      "surface-bright": "#31394d",
+                      "primary-fixed-dim": "#adc6ff",
+                      "on-error": "#690005",
+                      "surface-container": "#171f33",
+                      "tertiary-fixed-dim": "#f7be1d",
+                      "surface-container-highest": "#2d3449",
+                      "surface-container-high": "#222a3d",
+                      "error-container": "#93000a",
+                      "surface-container-lowest": "#060e20",
+                      "background": "#0b1326",
+                      "on-tertiary-fixed": "#251a00",
+                      "tertiary-fixed": "#ffdf9a",
+                      "secondary": "#b9c7e0",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-primary-container": "#00285d",
+                      "surface-variant": "#2d3449",
+                      "on-secondary": "#233144",
+                      "on-error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        /* High-fidelity syntax highlighting simulation */
+        .token-keyword { color: #c678dd; } /* Purple */
+        .token-function { color: #61afef; } /* Blue */
+        .token-string { color: #98c379; } /* Green */
+        .token-comment { color: #5c6370; font-style: italic; } /* Gray */
+        .token-operator { color: #56b6c2; } /* Cyan */
+        .token-variable { color: #e06c75; } /* Red */
+        .token-number { color: #d19a66; } /* Orange */
+        
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #424754;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen overflow-hidden flex flex-col font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-4 h-12 bg-[#0b1326] font-plus-jakarta text-sm tracking-tight border-b border-white/5">
+<div class="flex items-center gap-4">
+<div class="text-lg font-bold text-[#adc6ff] tracking-tighter">Intelligence Console</div>
+<!-- Search Bar (on_left logic) -->
+<div class="hidden md:flex items-center bg-surface-container-high rounded px-3 py-1.5 ml-4 border border-outline-variant/20 focus-within:border-primary/50 transition-colors w-64">
+<span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-outline w-full p-0" placeholder="Search commands, files..." type="text"/>
+<div class="flex gap-1 ml-2">
+<span class="text-[10px] bg-surface-container px-1.5 py-0.5 rounded text-outline-variant font-mono">⌘</span>
+<span class="text-[10px] bg-surface-container px-1.5 py-0.5 rounded text-outline-variant font-mono">K</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 text-[#c2c6d6]/60">
+<button class="hover:text-[#adc6ff] hover:bg-white/5 transition-colors p-1.5 rounded-lg scale-95 duration-150 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</button>
+<button class="hover:text-[#adc6ff] hover:bg-white/5 transition-colors p-1.5 rounded-lg scale-95 duration-150 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="hover:text-[#adc6ff] hover:bg-white/5 transition-colors p-1.5 rounded-lg scale-95 duration-150 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar & Main Content Wrapper -->
+<div class="flex flex-1 pt-12 h-full overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-16 flex flex-col items-center py-4 z-40 bg-[#0b1326] border-r border-white/5">
+<div class="flex flex-col gap-6 w-full items-center font-inter text-[11px] uppercase tracking-widest">
+<!-- Tabs -->
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#adc6ff] bg-[#adc6ff]/10 border-l-2 border-[#adc6ff] transition-all duration-200 ease-in-out group" title="Explorer">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="Search">
+<span class="material-symbols-outlined text-[22px]">search</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="Source Control">
+<span class="material-symbols-outlined text-[22px]">account_tree</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="AI Agents">
+<span class="material-symbols-outlined text-[22px]">psychology</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="Extensions">
+<span class="material-symbols-outlined text-[22px]">extension</span>
+</button>
+</div>
+<div class="mt-auto flex flex-col gap-6 w-full items-center font-inter text-[11px] uppercase tracking-widest">
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="Debug">
+<span class="material-symbols-outlined text-[22px]">bug_report</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full py-2 text-[#c2c6d6]/40 hover:text-[#adc6ff] hover:bg-white/5 transition-all duration-200 ease-in-out border-l-2 border-transparent group" title="Profile">
+<span class="material-symbols-outlined text-[22px]">manage_accounts</span>
+</button>
+</div>
+</aside>
+<!-- Main IDE Area -->
+<main class="flex-1 ml-16 flex bg-surface-container-low h-full">
+<!-- Left Sidebar: Explorer -->
+<div class="w-64 bg-surface-container-low border-r border-outline-variant/10 flex flex-col h-full flex-shrink-0">
+<div class="p-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex justify-between items-center">
+<span>Explorer</span>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">more_horiz</span></button>
+</div>
+<div class="flex-1 overflow-y-auto px-2 pb-4">
+<!-- Projects Section -->
+<div class="mb-4">
+<div class="flex items-center gap-1 px-2 py-1 text-sm font-medium text-on-surface hover:bg-surface-container-high rounded cursor-pointer group">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">keyboard_arrow_down</span>
+<span class="material-symbols-outlined text-[16px] text-primary">folder</span>
+<span class="truncate">pi-intelligence-core</span>
+</div>
+<div class="ml-4 pl-2 border-l border-outline-variant/20 flex flex-col gap-0.5 mt-1">
+<div class="flex items-center gap-2 px-2 py-1 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded cursor-pointer">
+<span class="material-symbols-outlined text-[14px] text-tertiary">folder</span>
+<span>src</span>
+</div>
+<div class="ml-6 flex flex-col gap-0.5">
+<div class="flex items-center gap-2 px-2 py-1 text-sm text-on-surface hover:bg-surface-container-high rounded cursor-pointer bg-surface-container-highest border-l-2 border-primary -ml-4 pl-[14px]">
+<span class="material-symbols-outlined text-[14px] text-primary">code</span>
+<span>main.py</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded cursor-pointer">
+<span class="material-symbols-outlined text-[14px] text-secondary">data_object</span>
+<span>config.json</span>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2 py-1 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded cursor-pointer mt-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">folder</span>
+<span>tests</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded cursor-pointer mt-1">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span>README.md</span>
+</div>
+</div>
+</div>
+<!-- System Files Section -->
+<div>
+<div class="flex items-center gap-1 px-2 py-1 text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded cursor-pointer group">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">keyboard_arrow_right</span>
+<span class="material-symbols-outlined text-[16px] text-outline">settings_applications</span>
+<span class="truncate">System Files</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Central Area: Editor -->
+<div class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- Editor Tabs -->
+<div class="flex bg-surface-container-low border-b border-outline-variant/10 overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container-highest border-t-2 border-primary text-sm text-on-surface min-w-[120px] max-w-[200px] cursor-pointer relative group">
+<span class="material-symbols-outlined text-[14px] text-primary">code</span>
+<span class="truncate">main.py</span>
+<button class="ml-auto opacity-0 group-hover:opacity-100 hover:bg-surface-container rounded p-0.5 transition-all"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 text-sm text-on-surface-variant hover:bg-surface-container-high min-w-[120px] max-w-[200px] cursor-pointer group transition-colors border-t-2 border-transparent">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate">README.md</span>
+<button class="ml-auto opacity-0 group-hover:opacity-100 hover:bg-surface-container rounded p-0.5 transition-all"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+</div>
+<!-- Editor Breadcrumbs -->
+<div class="flex items-center px-4 py-1.5 text-xs text-outline-variant border-b border-outline-variant/5">
+<span class="hover:text-on-surface cursor-pointer">pi-intelligence-core</span>
+<span class="material-symbols-outlined text-[14px] mx-1">chevron_right</span>
+<span class="hover:text-on-surface cursor-pointer">src</span>
+<span class="material-symbols-outlined text-[14px] mx-1">chevron_right</span>
+<span class="text-on-surface">main.py</span>
+</div>
+<!-- Code Area -->
+<div class="flex-1 relative overflow-hidden flex flex-col">
+<div class="flex-1 overflow-y-auto p-4 font-mono text-[13px] leading-relaxed relative">
+<!-- Line Numbers -->
+<div class="absolute left-0 top-0 bottom-0 w-12 bg-surface flex flex-col items-end py-4 pr-3 text-outline-variant/50 select-none border-r border-outline-variant/5">
+<div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div>
+</div>
+<!-- Code Content -->
+<div class="pl-10">
+<pre class="m-0"><code class="language-python"><span class="token-keyword">import</span> os
+<span class="token-keyword">from</span> typing <span class="token-keyword">import</span> Dict<span class="token-operator">,</span> Any
+
+<span class="token-keyword">class</span> <span class="token-function">IntelligenceNode</span>:
+    <span class="token-keyword">def</span> <span class="token-function">__init__</span>(<span class="token-variable">self</span><span class="token-operator">,</span> <span class="token-variable">config_path</span>: <span class="token-function">str</span>):
+        <span class="token-variable">self</span>.config <span class="token-operator">=</span> <span class="token-variable">self</span>.<span class="token-function">_load_config</span>(<span class="token-variable">config_path</span>)
+        <span class="token-variable">self</span>.status <span class="token-operator">=</span> <span class="token-string">"initializing"</span>
+        
+    <span class="token-keyword">def</span> <span class="token-function">_load_config</span>(<span class="token-variable">self</span><span class="token-operator">,</span> <span class="token-variable">path</span>: <span class="token-function">str</span>) <span class="token-operator">-&gt;</span> Dict[<span class="token-function">str</span><span class="token-operator">,</span> Any]:
+        <span class="token-comment"># Load configuration from secure vault</span>
+        <span class="token-keyword">if not</span> os.path.<span class="token-function">exists</span>(<span class="token-variable">path</span>):
+            <span class="token-keyword">raise</span> <span class="token-function">FileNotFoundError</span>(<span class="token-string">f"Config not found: {path}"</span>)
+        <span class="token-keyword">return</span> {<span class="token-string">"mode"</span>: <span class="token-string">"tactical"</span><span class="token-operator">,</span> <span class="token-string">"threads"</span>: <span class="token-number">8</span>}
+
+<span class="token-keyword">def</span> <span class="token-function">main</span>():
+    <span class="token-variable">node</span> <span class="token-operator">=</span> <span class="token-function">IntelligenceNode</span>(<span class="token-string">"/etc/pi/config.json"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Node initialized in {node.config['mode']} mode."</span>)
+
+<span class="token-keyword">if</span> __name__ <span class="token-operator">==</span> <span class="token-string">"__main__"</span>:
+    <span class="token-function">main</span>()</code></pre>
+</div>
+</div>
+<!-- AI Command Bar (Floating) -->
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-2xl bg-surface-bright/80 backdrop-blur-[20px] border border-outline-variant/15 shadow-[0_24px_48px_rgba(0,0,0,0.4)] rounded-xl p-2 flex items-center gap-2 z-20">
+<div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+</div>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-outline-variant p-2" placeholder="Ask AI to edit this file or press ⌘I..." type="text"/>
+<div class="flex items-center gap-2 pr-1">
+<button class="px-3 py-1.5 rounded-lg text-xs font-medium text-on-surface-variant hover:bg-surface-container-highest transition-colors">History</button>
+<button class="bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-[0_0_10px_rgba(173,198,255,0.2)]">Submit</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: AI Assistant -->
+<div class="w-80 bg-surface-container-low border-l border-outline-variant/10 flex flex-col h-full flex-shrink-0">
+<div class="p-4 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">robot_2</span>
+<span class="font-headline font-semibold text-sm">Pi Assistant</span>
+</div>
+<button class="text-outline-variant hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+<!-- AI Message -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-xs font-medium text-primary">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+<span>Pi</span>
+</div>
+<div class="bg-surface-container rounded-xl rounded-tl-sm p-3 text-sm text-on-surface-variant leading-relaxed shadow-sm">
+                            I've analyzed <code class="bg-surface px-1 py-0.5 rounded text-primary text-[12px]">main.py</code>. The <code>_load_config</code> method currently mocks the return data. Would you like me to implement actual JSON parsing?
+                        </div>
+<!-- Context Chips -->
+<div class="flex flex-wrap gap-2 mt-1">
+<div class="flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-outline-variant/20 text-[11px] text-outline">
+<span class="material-symbols-outlined text-[12px]">code</span>
+<span>main.py (lines 8-12)</span>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="flex gap-2 mt-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/10 text-xs text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[14px]">build</span>
+                                Implement parsing
+                            </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/10 text-xs text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                                Explain context
+                            </button>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex flex-col gap-2 items-end mt-4">
+<div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant">
+<span>You</span>
+<span class="material-symbols-outlined text-[14px]">person</span>
+</div>
+<div class="bg-surface-container-highest border border-outline-variant/10 rounded-xl rounded-tr-sm p-3 text-sm text-on-surface leading-relaxed max-w-[90%]">
+                            Yes, implement standard python json parsing and add error handling for malformed JSON.
+                        </div>
+</div>
+</div>
+<!-- Chat Input -->
+<div class="p-4 border-t border-outline-variant/10 bg-surface-container-low">
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 focus-within:border-primary/50 transition-colors flex flex-col p-2">
+<textarea class="bg-transparent border-none focus:ring-0 text-sm text-on-surface resize-none p-2 placeholder:text-outline-variant" placeholder="Ask a question or request an edit..." rows="2"></textarea>
+<div class="flex justify-between items-center mt-2 px-1">
+<div class="flex gap-1">
+<button class="text-outline-variant hover:text-on-surface p-1.5 rounded hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-[16px]">attach_file</span></button>
+<button class="text-outline-variant hover:text-on-surface p-1.5 rounded hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-[16px]">alternate_email</span></button>
+</div>
+<button class="bg-primary/10 text-primary hover:bg-primary/20 p-1.5 rounded-lg transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Status Bar -->
+<footer class="fixed bottom-0 w-full h-6 bg-surface border-t border-outline-variant/10 z-50 flex justify-between items-center px-3 font-mono text-[10px] text-outline-variant tracking-wider uppercase">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[12px]">code_blocks</span>
+<span>main.py</span>
+</div>
+<div class="flex items-center gap-1 hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[12px]">cancel</span>
+<span>0 Errors</span>
+</div>
+<div class="flex items-center gap-1 hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[12px]">warning</span>
+<span>0 Warnings</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hover:text-on-surface cursor-pointer">Ln 12, Col 45</span>
+<span class="hover:text-on-surface cursor-pointer">Spaces: 4</span>
+<span class="hover:text-on-surface cursor-pointer">UTF-8</span>
+<span class="hover:text-on-surface cursor-pointer">Python 3.11</span>
+<div class="flex items-center gap-1.5 text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full ml-2">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_4px_#f7be1d]"></div>
+<span>Node-01 Online</span>
+</div>
+</div>
+</footer>
+</body></html>

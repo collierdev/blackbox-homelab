@@ -10,6 +10,16 @@ exports.turnOn = turnOn;
 exports.turnOff = turnOff;
 exports.setLightBrightness = setLightBrightness;
 exports.setLightColor = setLightColor;
+exports.setLightHSColor = setLightHSColor;
+exports.setLightColorTemp = setLightColorTemp;
+exports.setLightEffect = setLightEffect;
+exports.setMultipleLightsBrightness = setMultipleLightsBrightness;
+exports.setMultipleLightsColor = setMultipleLightsColor;
+exports.setMultipleLightsHSColor = setMultipleLightsHSColor;
+exports.setMultipleLightsColorTemp = setMultipleLightsColorTemp;
+exports.toggleMultipleLights = toggleMultipleLights;
+exports.turnOnMultipleLights = turnOnMultipleLights;
+exports.turnOffMultipleLights = turnOffMultipleLights;
 exports.setClimateTemperature = setClimateTemperature;
 exports.setClimateHvacMode = setClimateHvacMode;
 exports.mediaPlayPause = mediaPlayPause;
@@ -114,6 +124,75 @@ async function setLightBrightness(entityId, brightness) {
 }
 async function setLightColor(entityId, rgbColor) {
     return callService('light', 'turn_on', entityId, { rgb_color: rgbColor });
+}
+// Set light color using HS (Hue/Saturation) - common for smart bulbs
+async function setLightHSColor(entityId, hsColor) {
+    return callService('light', 'turn_on', entityId, { hs_color: hsColor });
+}
+// Set light color temperature in Kelvin
+async function setLightColorTemp(entityId, kelvin) {
+    return callService('light', 'turn_on', entityId, { color_temp_kelvin: kelvin });
+}
+// Set light effect
+async function setLightEffect(entityId, effect) {
+    return callService('light', 'turn_on', entityId, { effect });
+}
+// Control multiple lights at once (for fixtures)
+async function setMultipleLightsBrightness(entityIds, brightness) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await setLightBrightness(entityId, brightness);
+        results.push(...result);
+    }
+    return results;
+}
+async function setMultipleLightsColor(entityIds, rgbColor) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await setLightColor(entityId, rgbColor);
+        results.push(...result);
+    }
+    return results;
+}
+async function setMultipleLightsHSColor(entityIds, hsColor) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await setLightHSColor(entityId, hsColor);
+        results.push(...result);
+    }
+    return results;
+}
+async function setMultipleLightsColorTemp(entityIds, kelvin) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await setLightColorTemp(entityId, kelvin);
+        results.push(...result);
+    }
+    return results;
+}
+async function toggleMultipleLights(entityIds) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await toggleEntity(entityId);
+        results.push(...result);
+    }
+    return results;
+}
+async function turnOnMultipleLights(entityIds) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await turnOn(entityId);
+        results.push(...result);
+    }
+    return results;
+}
+async function turnOffMultipleLights(entityIds) {
+    const results = [];
+    for (const entityId of entityIds) {
+        const result = await turnOff(entityId);
+        results.push(...result);
+    }
+    return results;
 }
 // Climate-specific functions
 async function setClimateTemperature(entityId, temperature) {

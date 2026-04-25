@@ -42,7 +42,7 @@ export default function CalendarSettings({
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectColor, setEditProjectColor] = useState('');
-  const [showColorPicker, setShowColorPicker] = useState<string | null>(null); // Track which project's color picker is open
+  const [showColorPicker, setShowColorPicker] = useState<string | null>(null);
 
   // Load sync accounts
   useEffect(() => {
@@ -88,11 +88,7 @@ export default function CalendarSettings({
   };
 
   const handleConnectCalendar = (provider: 'google' | 'microsoft' | 'caldav') => {
-    // For now, show a message that OAuth is coming soon
     alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar sync will be available soon! OAuth integration is currently being implemented.`);
-
-    // In the future, this will redirect to OAuth flow:
-    // window.location.href = `/api/sync/${provider}/auth`;
   };
 
   const handleAddProject = async () => {
@@ -151,13 +147,13 @@ export default function CalendarSettings({
     }
   };
 
-  const getSyncStatusBadge = (status: SyncAccount['status']) => {
-    const badges = {
-      connected: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      error: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      syncing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  const getSyncStatusStyle = (status: SyncAccount['status']) => {
+    const styles: Record<string, { color: string; background: string }> = {
+      connected: { color: '#22c55e', background: 'rgba(34, 197, 94, 0.15)' },
+      error: { color: '#ffb4ab', background: 'rgba(255, 180, 171, 0.15)' },
+      syncing: { color: '#adc6ff', background: 'rgba(173, 198, 255, 0.15)' },
     };
-    return badges[status] || badges.connected;
+    return styles[status] || styles.connected;
   };
 
   const getProviderName = (provider: string) => {
@@ -169,40 +165,61 @@ export default function CalendarSettings({
     return names[provider] || provider;
   };
 
+  const inputStyle = {
+    background: '#162040',
+    border: '1px solid #243356',
+    color: '#e2e8f0',
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+    >
+      <div
+        className="rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+        style={{ background: '#1c2a4a', border: '1px solid #243356' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar Settings</h2>
+        <div
+          className="flex items-center justify-between p-6"
+          style={{ borderBottom: '1px solid #243356' }}
+        >
+          <h2 className="text-2xl font-bold" style={{ color: '#e2e8f0' }}>Calendar Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: '#8892a4' }}
             aria-label="Close settings"
           >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 border-b border-gray-200 dark:border-gray-700">
+        <div
+          className="flex gap-1 px-6 pt-4"
+          style={{ borderBottom: '1px solid #243356' }}
+        >
           <button
             onClick={() => setActiveTab('sync')}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+            className="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+            style={
               activeTab === 'sync'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+                ? { background: '#162040', color: '#adc6ff', borderBottom: '2px solid #adc6ff' }
+                : { color: '#8892a4' }
+            }
           >
             Calendar Sync
           </button>
           <button
             onClick={() => setActiveTab('projects')}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+            className="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+            style={
               activeTab === 'projects'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+                ? { background: '#162040', color: '#adc6ff', borderBottom: '2px solid #adc6ff' }
+                : { color: '#8892a4' }
+            }
           >
             Projects
           </button>
@@ -214,41 +231,46 @@ export default function CalendarSettings({
             <div className="space-y-6">
               {/* Calendar Sync Section */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-lg font-semibold mb-3" style={{ color: '#e2e8f0' }}>
                   Connected Calendars
                 </h3>
 
                 {isLoadingSyncAccounts ? (
-                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                  <p style={{ color: '#8892a4' }}>Loading...</p>
                 ) : syncAccounts.length > 0 ? (
                   <div className="space-y-3">
                     {syncAccounts.map((account) => (
                       <div
                         key={account.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600"
+                        className="flex items-center justify-between p-4 rounded-lg"
+                        style={{ background: '#162040', border: '1px solid #243356' }}
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium text-gray-900 dark:text-white">
+                            <span className="font-medium" style={{ color: '#e2e8f0' }}>
                               {getProviderName(account.provider)}
                             </span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getSyncStatusBadge(account.status)}`}>
+                            <span
+                              className="px-2 py-0.5 text-xs font-medium rounded-full"
+                              style={getSyncStatusStyle(account.status)}
+                            >
                               {account.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{account.email}</p>
+                          <p className="text-sm mt-1" style={{ color: '#8892a4' }}>{account.email}</p>
                           {account.lastSync && (
-                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            <p className="text-xs mt-1" style={{ color: '#8892a4' }}>
                               Last synced: {new Date(account.lastSync).toLocaleString()}
                             </p>
                           )}
                           {account.errorMessage && (
-                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{account.errorMessage}</p>
+                            <p className="text-xs mt-1" style={{ color: '#ffb4ab' }}>{account.errorMessage}</p>
                           )}
                         </div>
                         <button
                           onClick={() => handleDisconnectAccount(account.id)}
-                          className="ml-4 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="ml-4 p-2 rounded-lg transition-colors"
+                          style={{ color: '#ffb4ab' }}
                           aria-label="Disconnect calendar"
                         >
                           <Unlink className="w-4 h-4" />
@@ -257,39 +279,31 @@ export default function CalendarSettings({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400 italic">No calendars connected yet</p>
+                  <p className="italic" style={{ color: '#8892a4' }}>No calendars connected yet</p>
                 )}
               </div>
 
               {/* Connect New Calendar */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-lg font-semibold mb-3" style={{ color: '#e2e8f0' }}>
                   Connect a Calendar
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
-                    onClick={() => handleConnectCalendar('google')}
-                    className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 rounded-lg transition-colors group"
-                  >
-                    <Link2 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Google Calendar</span>
-                  </button>
-                  <button
-                    onClick={() => handleConnectCalendar('microsoft')}
-                    className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 rounded-lg transition-colors group"
-                  >
-                    <Link2 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Outlook/iCloud</span>
-                  </button>
-                  <button
-                    onClick={() => handleConnectCalendar('caldav')}
-                    className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 rounded-lg transition-colors group"
-                  >
-                    <Link2 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">CalDAV</span>
-                  </button>
+                  {(['google', 'microsoft', 'caldav'] as const).map((provider) => (
+                    <button
+                      key={provider}
+                      onClick={() => handleConnectCalendar(provider)}
+                      className="flex items-center justify-center gap-2 p-4 rounded-lg transition-colors group"
+                      style={{ background: '#162040', border: '2px solid #243356' }}
+                    >
+                      <Link2 className="w-5 h-5" style={{ color: '#8892a4' }} />
+                      <span className="font-medium" style={{ color: '#e2e8f0' }}>
+                        {provider === 'google' ? 'Google Calendar' : provider === 'microsoft' ? 'Outlook/iCloud' : 'CalDAV'}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                <p className="text-xs mt-3" style={{ color: '#8892a4' }}>
                   Note: Calendar sync with OAuth is currently in development. You'll be able to connect your calendars soon!
                 </p>
               </div>
@@ -301,7 +315,8 @@ export default function CalendarSettings({
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600"
+                    className="p-3 rounded-lg"
+                    style={{ background: '#162040', border: '1px solid #243356' }}
                   >
                     {editingProjectId === project.id ? (
                       <div className="space-y-3">
@@ -309,11 +324,14 @@ export default function CalendarSettings({
                           {/* Color Button */}
                           <button
                             onClick={() => setShowColorPicker(showColorPicker === project.id ? null : project.id)}
-                            className="relative w-10 h-10 rounded-lg border-2 border-gray-300 dark:border-gray-500 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group"
-                            style={{ backgroundColor: editProjectColor }}
+                            className="relative w-10 h-10 rounded-lg border-2 transition-colors group"
+                            style={{
+                              backgroundColor: editProjectColor,
+                              borderColor: '#243356',
+                            }}
                             title="Choose color"
                           >
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" style={{ background: 'rgba(0,0,0,0.4)' }}>
                               <Palette className="w-4 h-4 text-white" />
                             </div>
                           </button>
@@ -323,7 +341,8 @@ export default function CalendarSettings({
                             type="text"
                             value={editProjectName}
                             onChange={(e) => setEditProjectName(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            style={inputStyle}
                             placeholder="Project name"
                             autoFocus
                           />
@@ -331,7 +350,8 @@ export default function CalendarSettings({
                           {/* Actions */}
                           <button
                             onClick={handleSaveEditProject}
-                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: '#22c55e' }}
                             aria-label="Save"
                           >
                             <Check className="w-5 h-5" />
@@ -341,7 +361,8 @@ export default function CalendarSettings({
                               handleCancelEdit();
                               setShowColorPicker(null);
                             }}
-                            className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: '#8892a4' }}
                             aria-label="Cancel"
                           >
                             <X className="w-5 h-5" />
@@ -350,7 +371,10 @@ export default function CalendarSettings({
 
                         {/* Color Picker */}
                         {showColorPicker === project.id && (
-                          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                          <div
+                            className="p-4 rounded-lg"
+                            style={{ background: '#1c2a4a', border: '1px solid #243356' }}
+                          >
                             <ColorPicker
                               color={editProjectColor}
                               onChange={(color) => setEditProjectColor(color)}
@@ -365,26 +389,28 @@ export default function CalendarSettings({
                       <div className="flex items-center gap-3">
                         {/* Color Badge */}
                         <div
-                          className="w-10 h-10 rounded-lg border-2 border-gray-300 dark:border-gray-500 shadow-sm"
-                          style={{ backgroundColor: project.color }}
+                          className="w-10 h-10 rounded-lg shadow-sm"
+                          style={{ backgroundColor: project.color, border: '2px solid #243356' }}
                         />
 
                         {/* Project Name */}
-                        <span className="flex-1 font-medium text-gray-900 dark:text-white">
+                        <span className="flex-1 font-medium" style={{ color: '#e2e8f0' }}>
                           {project.name}
                         </span>
 
                         {/* Actions */}
                         <button
                           onClick={() => handleStartEditProject(project)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ color: '#adc6ff' }}
                           aria-label="Edit project"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteProject(project.id, project.name)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ color: '#ffb4ab' }}
                           aria-label="Delete project"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -397,17 +423,20 @@ export default function CalendarSettings({
 
               {/* Add New Project */}
               {isAddingProject ? (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-300 dark:border-blue-700">
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'rgba(173, 198, 255, 0.08)', border: '2px solid #adc6ff' }}
+                >
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       {/* Color Button */}
                       <button
                         onClick={() => setShowColorPicker(showColorPicker === 'new' ? null : 'new')}
-                        className="relative w-10 h-10 rounded-lg border-2 border-gray-300 dark:border-gray-500 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group"
-                        style={{ backgroundColor: newProjectColor }}
+                        className="relative w-10 h-10 rounded-lg border-2 transition-colors group"
+                        style={{ backgroundColor: newProjectColor, borderColor: '#243356' }}
                         title="Choose color"
                       >
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" style={{ background: 'rgba(0,0,0,0.4)' }}>
                           <Palette className="w-4 h-4 text-white" />
                         </div>
                       </button>
@@ -418,7 +447,8 @@ export default function CalendarSettings({
                         value={newProjectName}
                         onChange={(e) => setNewProjectName(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAddProject()}
-                        className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={inputStyle}
                         placeholder="Project name"
                         autoFocus
                       />
@@ -426,7 +456,8 @@ export default function CalendarSettings({
                       {/* Actions */}
                       <button
                         onClick={handleAddProject}
-                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                        className="p-2 rounded-lg transition-colors"
+                        style={{ color: '#22c55e' }}
                         aria-label="Add project"
                       >
                         <Check className="w-5 h-5" />
@@ -438,7 +469,8 @@ export default function CalendarSettings({
                           setNewProjectColor(PRESET_COLORS[0]);
                           setShowColorPicker(null);
                         }}
-                        className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                        className="p-2 rounded-lg transition-colors"
+                        style={{ color: '#8892a4' }}
                         aria-label="Cancel"
                       >
                         <X className="w-5 h-5" />
@@ -447,7 +479,10 @@ export default function CalendarSettings({
 
                     {/* Color Picker */}
                     {showColorPicker === 'new' && (
-                      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                      <div
+                        className="p-4 rounded-lg"
+                        style={{ background: '#1c2a4a', border: '1px solid #243356' }}
+                      >
                         <ColorPicker
                           color={newProjectColor}
                           onChange={(color) => setNewProjectColor(color)}
@@ -462,12 +497,15 @@ export default function CalendarSettings({
               ) : (
                 <button
                   onClick={() => setIsAddingProject(true)}
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-white dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 rounded-lg transition-colors group"
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-lg transition-colors"
+                  style={{
+                    background: '#162040',
+                    border: '2px dashed #243356',
+                    color: '#8892a4',
+                  }}
                 >
-                  <Plus className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500" />
-                  <span className="font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500">
-                    Add New Project
-                  </span>
+                  <Plus className="w-5 h-5" />
+                  <span className="font-medium">Add New Project</span>
                 </button>
               )}
             </div>
@@ -475,10 +513,14 @@ export default function CalendarSettings({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div
+          className="flex justify-end gap-3 p-6"
+          style={{ borderTop: '1px solid #243356' }}
+        >
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+            className="px-4 py-2 font-medium rounded-lg transition-colors"
+            style={{ background: '#adc6ff', color: '#0b1326' }}
           >
             Done
           </button>

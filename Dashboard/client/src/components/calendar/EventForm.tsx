@@ -100,19 +100,34 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
     { value: '#ec4899', label: 'Pink' },
   ];
 
+  const inputStyle = {
+    background: '#162040',
+    border: '1px solid #243356',
+    color: '#e2e8f0',
+  };
+
+  const labelStyle = { color: '#8892a4' };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div
+        className="rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4"
+        style={{ background: '#1c2a4a', border: '1px solid #243356' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div
+          className="flex items-center justify-between p-6"
+          style={{ borderBottom: '1px solid #243356' }}
+        >
+          <h2 className="text-2xl font-bold" style={{ color: '#e2e8f0' }}>
             {event ? 'Edit Event' : 'New Event'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-1 rounded transition-colors"
+            style={{ color: '#8892a4' }}
           >
-            <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -120,17 +135,18 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium mb-1" style={labelStyle}>
               Title *
             </label>
             <input
               type="text"
               {...register('title')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
               placeholder="Event title"
             />
             {errors.title && (
-              <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>
+              <p className="mt-1 text-sm" style={{ color: '#ffb4ab' }}>{errors.title.message}</p>
             )}
           </div>
 
@@ -140,9 +156,10 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
               type="checkbox"
               {...register('isAllDay')}
               id="isAllDay"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 rounded focus:ring-blue-500"
+              style={{ borderColor: '#243356' }}
             />
-            <label htmlFor="isAllDay" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="isAllDay" className="ml-2 text-sm font-medium" style={labelStyle}>
               All day event
             </label>
           </div>
@@ -150,68 +167,73 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
           {/* Start & End DateTime */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 Start *
               </label>
               <input
                 type={isAllDay ? 'date' : 'datetime-local'}
                 {...register('startDateTime')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
               />
               {errors.startDateTime && (
-                <p className="mt-1 text-sm text-red-500">{errors.startDateTime.message}</p>
+                <p className="mt-1 text-sm" style={{ color: '#ffb4ab' }}>{errors.startDateTime.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium mb-1" style={labelStyle}>
                 End *
               </label>
               <input
                 type={isAllDay ? 'date' : 'datetime-local'}
                 {...register('endDateTime')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
               />
               {errors.endDateTime && (
-                <p className="mt-1 text-sm text-red-500">{errors.endDateTime.message}</p>
+                <p className="mt-1 text-sm" style={{ color: '#ffb4ab' }}>{errors.endDateTime.message}</p>
               )}
             </div>
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium mb-1" style={labelStyle}>
               Location
             </label>
             <input
               type="text"
               {...register('location')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
               placeholder="Add location"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium mb-1" style={labelStyle}>
               Description
             </label>
             <textarea
               {...register('description')}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              style={inputStyle}
               placeholder="Add description"
             />
           </div>
 
           {/* Project */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium mb-1" style={labelStyle}>
               Project
             </label>
             <select
               {...register('projectId')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
             >
               <option value="">No project</option>
               {projects.map((project) => (
@@ -224,7 +246,7 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={labelStyle}>
               Color
             </label>
             <div className="flex flex-wrap gap-2">
@@ -237,12 +259,11 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
                     className="sr-only"
                   />
                   <div
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      watch('color') === color.value
-                        ? 'border-gray-900 dark:border-white'
-                        : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color.value }}
+                    className="w-8 h-8 rounded-full border-2"
+                    style={{
+                      backgroundColor: color.value,
+                      borderColor: watch('color') === color.value ? '#e2e8f0' : 'transparent',
+                    }}
                     title={color.label}
                   />
                 </label>
@@ -256,13 +277,19 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
               type="button"
               data-testid="cancel-button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex-1 px-4 py-2 rounded-lg transition-colors"
+              style={{
+                border: '1px solid #243356',
+                color: '#c2c6d6',
+                background: 'transparent',
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium"
+              style={{ background: '#adc6ff', color: '#0b1326' }}
             >
               {event ? 'Save Changes' : 'Create Event'}
             </button>

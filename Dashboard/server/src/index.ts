@@ -1,13 +1,15 @@
 import express from 'express';
 import cors from 'cors';
-import { createServer } from 'http';
+import { createServer, request as httpRequest } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+import { URL } from 'url';
 import systemRoutes from './routes/system';
 import servicesRoutes from './routes/services';
 import chatRoutes from './routes/chat';
 import homeassistantRoutes from './routes/homeassistant';
 import go2rtcRoutes from './routes/go2rtc';
+import { GO2RTC_URL, GO2RTC_PROXY_PREFIX } from './config/go2rtc';
 import calendarRoutes from './routes/calendar';
 import todosRoutes from './routes/todos';
 import projectsRoutes from './routes/projects';
@@ -60,6 +62,39 @@ app.use('/api/planner', plannerRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// go2rtc reverse proxy — forwards /go2rtc/* to go2rtc server
+// This lets camera feeds work over any network (LAN, Tailscale, etc.)
+app.use(GO2RTC_PROXY_PREFIX, (req, res) => {
+  const target = new URL(GO2RTC_URL);
+  const proxyPath = req.url; // includes query string
+
+  const proxyReq = httpRequest(
+    {
+      hostname: target.hostname,
+      port: target.port,
+      path: proxyPath,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: `${target.hostname}:${target.port}`,
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    }
+  );
+
+  proxyReq.on('error', (err) => {
+    console.error('go2rtc proxy error:', err.message);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'go2rtc unreachable' });
+    }
+  });
+
+  req.pipe(proxyReq, { end: true });
 });
 
 // Serve static files in production
@@ -199,6 +234,52 @@ async function initializeDatabase() {
     console.error('Server will continue but calendar/todo features may not work');
   }
 }
+
+// WebSocket proxy for go2rtc streams (MSE/WebRTC signaling)
+httpServer.on('upgrade', (req, socket, head) => {
+  // Only proxy WebSocket requests to /go2rtc/
+  if (req.url && req.url.startsWith(GO2RTC_PROXY_PREFIX)) {
+    const target = new URL(GO2RTC_URL);
+    const proxyPath = req.url.slice(GO2RTC_PROXY_PREFIX.length) || '/';
+
+    const proxyReq = httpRequest({
+      hostname: target.hostname,
+      port: target.port,
+      path: proxyPath,
+      method: 'GET',
+      headers: {
+        ...req.headers,
+        host: `${target.hostname}:${target.port}`,
+      },
+    });
+
+    proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
+      // Send the 101 Switching Protocols response back
+      let responseHead = `HTTP/1.1 101 Switching Protocols\r\n`;
+      for (const [key, value] of Object.entries(proxyRes.headers)) {
+        if (value) responseHead += `${key}: ${value}\r\n`;
+      }
+      responseHead += '\r\n';
+      socket.write(responseHead);
+      if (proxyHead.length) socket.write(proxyHead);
+
+      // Bi-directional pipe
+      proxySocket.pipe(socket);
+      socket.pipe(proxySocket);
+
+      proxySocket.on('error', () => socket.destroy());
+      socket.on('error', () => proxySocket.destroy());
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error('go2rtc WS proxy error:', err.message);
+      socket.destroy();
+    });
+
+    proxyReq.end();
+  }
+  // Let socket.io handle its own upgrades (it does this internally)
+});
 
 httpServer.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);

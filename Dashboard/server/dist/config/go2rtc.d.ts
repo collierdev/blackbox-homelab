@@ -7,6 +7,7 @@ export interface CameraConfig {
 }
 export declare const CAMERAS: CameraConfig[];
 export declare const GO2RTC_URL: string;
+export declare const GO2RTC_PROXY_PREFIX = "/go2rtc";
 export declare function getWebRTCPageUrl(streamName: string): string;
 export declare function getStreamPageUrl(streamName: string): string;
 export declare function getMSEStreamUrl(streamName: string): string;

@@ -34,7 +34,7 @@ export function CollapsiblePanel({
     <section
       ref={setNodeRef}
       style={style}
-      className={`group relative bg-card rounded-xl border border-border overflow-hidden ${
+      className={`group relative bg-surface-container-low rounded-xl border border-white/5 overflow-hidden ${
         isDragging ? 'opacity-50 shadow-lg z-50' : ''
       }`}
     >
@@ -42,7 +42,7 @@ export function CollapsiblePanel({
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-3 top-3 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 rounded-lg p-1 hover:bg-secondary/50 z-10"
+        className="absolute right-3 top-3 cursor-grab active:cursor-grabbing text-on-surface-variant/40 hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100 rounded-lg p-1 hover:bg-surface-container-high/50 z-10"
         aria-label="Drag to reorder"
       >
         <GripVertical className="w-4 h-4" />
@@ -51,22 +51,22 @@ export function CollapsiblePanel({
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-secondary/50 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-surface-container-high/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           {icon}
-          <h3 className="font-semibold text-foreground">{title}</h3>
+          <h3 className="font-semibold text-on-surface font-['Plus_Jakarta_Sans']">{title}</h3>
           {badge && (
-            <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+            <span className="text-xs text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full">
               {badge}
             </span>
           )}
         </div>
-        {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        {isOpen ? <ChevronUp className="w-5 h-5 text-on-surface-variant" /> : <ChevronDown className="w-5 h-5 text-on-surface-variant" />}
       </button>
 
       {/* Content */}
-      {isOpen && <div className="border-t border-border">{children}</div>}
+      {isOpen && <div className="border-t border-white/5">{children}</div>}
     </section>
   );
 }

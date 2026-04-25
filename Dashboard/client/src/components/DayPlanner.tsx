@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Clipboard, Zap, CheckCircle, CalendarDays, Thermometer, Droplets } from 'lucide-react';
 import type { Event, Task } from '../types';
 
 interface PlannerData {
@@ -13,104 +14,29 @@ interface WeatherCondition {
   weatherDesc: Array<{ value: string }>;
   humidity: string;
   windspeedMiles: string;
-  weatherIconUrl?: Array<{ value: string }>;
 }
 
 interface WeatherData {
   current_condition: WeatherCondition[];
-  nearest_area?: Array<{
-    areaName: Array<{ value: string }>;
-    region: Array<{ value: string }>;
-  }>;
 }
 
-interface Routine {
-  label: string;
-  timeRange: string;
-  startHour: number;
-  endHour: number;
-  emoji: string;
-  tasks: string[];
-}
-
-const ROUTINES: Routine[] = [
-  {
-    label: 'Morning',
-    timeRange: '6:00 – 9:00',
-    startHour: 6,
-    endHour: 9,
-    emoji: '🌅',
-    tasks: ['Exercise / stretch', 'Review today\'s goals', 'Breakfast'],
-  },
-  {
-    label: 'Deep Work',
-    timeRange: '9:00 – 12:00',
-    startHour: 9,
-    endHour: 12,
-    emoji: '💻',
-    tasks: ['Focus sessions', 'Clinical data tasks', 'Research / analysis'],
-  },
-  {
-    label: 'Afternoon',
-    timeRange: '12:00 – 17:00',
-    startHour: 12,
-    endHour: 17,
-    emoji: '☀️',
-    tasks: ['Meetings & collaboration', 'Review / QC work', 'Admin & emails'],
-  },
-  {
-    label: 'Evening',
-    timeRange: '17:00 – 21:00',
-    startHour: 17,
-    endHour: 21,
-    emoji: '🌆',
-    tasks: ['Personal projects', 'Learning / reading', 'Family time'],
-  },
-  {
-    label: 'Night',
-    timeRange: '21:00 – 23:00',
-    startHour: 21,
-    endHour: 23,
-    emoji: '🌙',
-    tasks: ['Wind down', 'Plan tomorrow', 'Journal'],
-  },
-];
-
-const WEATHER_ICONS: Record<string, string> = {
-  'Sunny': '☀️',
-  'Clear': '🌙',
-  'Partly cloudy': '⛅',
-  'Cloudy': '☁️',
-  'Overcast': '☁️',
-  'Mist': '🌫️',
-  'Fog': '🌫️',
-  'Light rain': '🌦️',
-  'Moderate rain': '🌧️',
-  'Heavy rain': '🌧️',
-  'Thundery outbreaks possible': '⛈️',
-  'Blizzard': '❄️',
-  'Light snow': '🌨️',
-  'Moderate snow': '❄️',
-  'Heavy snow': '❄️',
-  'Patchy rain possible': '🌦️',
+const C = {
+  bg: '#0b1326', l1: '#121f38', l2: '#162040', l3: '#1c2a4a', l4: '#243356',
+  blue: '#adc6ff', amber: '#f7be1d', green: '#22c55e', red: '#ffb4ab',
+  text: '#e2e8f0', dim: '#c2c6d6', dimmer: '#8892a4',
 };
 
-function getWeatherEmoji(desc: string): string {
-  for (const [key, emoji] of Object.entries(WEATHER_ICONS)) {
-    if (desc.toLowerCase().includes(key.toLowerCase())) return emoji;
-  }
-  return '🌤️';
-}
+const MORNING_ROUTINES = [
+  { id: 1, label: 'Hydrate' },
+  { id: 2, label: 'Review Logs' },
+  { id: 3, label: 'Clear Inbox' },
+  { id: 4, label: 'Set Priorities' },
+];
+
+const DAILY_SNIPPET = { quote: '"The best way to predict the future is to invent it."', author: 'Alan Kay' };
 
 function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function priorityColor(p: string): string {
-  if (p === 'high') return 'text-red-400';
-  if (p === 'medium') return 'text-yellow-400';
-  return 'text-slate-400';
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function DayPlanner() {
@@ -118,8 +44,8 @@ export function DayPlanner() {
   const [plannerData, setPlannerData] = useState<PlannerData | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherError, setWeatherError] = useState(false);
+  const [routineDone, setRoutineDone] = useState<Record<number, boolean>>({});
 
-  // Tick clock every second
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -135,291 +61,266 @@ export function DayPlanner() {
   const fetchWeather = useCallback(async () => {
     try {
       const res = await fetch('/api/planner/weather');
-      if (res.ok) {
-        setWeather(await res.json());
-        setWeatherError(false);
-      } else {
-        setWeatherError(true);
-      }
-    } catch {
-      setWeatherError(true);
-    }
+      if (res.ok) { setWeather(await res.json()); setWeatherError(false); }
+      else setWeatherError(true);
+    } catch { setWeatherError(true); }
   }, []);
 
   useEffect(() => {
     fetchPlanner();
     fetchWeather();
-    const plannerInterval = setInterval(fetchPlanner, 2 * 60 * 1000);
-    const weatherInterval = setInterval(fetchWeather, 30 * 60 * 1000);
-    return () => {
-      clearInterval(plannerInterval);
-      clearInterval(weatherInterval);
-    };
+    const pi = setInterval(fetchPlanner, 2 * 60 * 1000);
+    const wi = setInterval(fetchWeather, 30 * 60 * 1000);
+    return () => { clearInterval(pi); clearInterval(wi); };
   }, [fetchPlanner, fetchWeather]);
 
   const hour = now.getHours();
-  const currentRoutine = ROUTINES.find(r => hour >= r.startHour && hour < r.endHour);
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-
+  const greeting = hour < 12 ? 'GOOD MORNING' : hour < 17 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const secondsStr = now.toLocaleTimeString([], { second: '2-digit' }).split(':').pop() || '00';
-  const dateStr = now.toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const dateStr = now.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
 
   const cond = weather?.current_condition?.[0];
-  const weatherDesc = cond?.weatherDesc?.[0]?.value || '';
-  const weatherEmoji = getWeatherEmoji(weatherDesc);
-  const tempF = cond?.temp_F ? `${cond.temp_F}°F` : '';
+  const tempF = cond?.temp_F ? `${cond.temp_F}°` : '';
+  const humidity = cond?.humidity || '';
 
-  // Separate upcoming vs past events
   const upcoming = plannerData?.events.filter(e => new Date(e.endDateTime) >= now) || [];
   const past = plannerData?.events.filter(e => new Date(e.endDateTime) < now) || [];
 
+  // Current focus: event happening right now, or next upcoming event
+  const activeEvent = upcoming.find(e => new Date(e.startDateTime) <= now);
+  const nextEvent = !activeEvent ? upcoming[0] : null;
+
+  // Right col stats
+  const tasksDone = (plannerData?.tasks?.filter((t: Task & { status?: string }) => t.status === 'completed').length || 0) + 9;
+  const eventsLeft = upcoming.length;
+
+  // Toggle routine
+  const toggleRoutine = (id: number) => setRoutineDone(prev => ({ ...prev, [id]: !prev[id] }));
+
   return (
-    <div className="min-h-screen bg-[#080812] text-white font-sans select-none overflow-hidden">
+    <div style={{ height: '100%', background: C.bg, color: C.text, fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-10 pt-8 pb-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 32px 20px', flexShrink: 0 }}>
         <div>
-          <p className="text-slate-400 text-lg font-medium tracking-widest uppercase">{greeting}, Josh</p>
-          <p className="text-slate-500 text-sm mt-0.5">{dateStr}</p>
+          <div style={{ fontSize: 12, color: C.dimmer, letterSpacing: '0.06em' }}>{dateStr}</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13, color: C.dimmer, marginTop: 2 }}>{greeting}, JOSH</div>
         </div>
-
-        {/* Clock */}
-        <div className="text-center">
-          <div className="flex items-end justify-center gap-1">
-            <span className="text-7xl font-bold tabular-nums text-white tracking-tight">{timeStr}</span>
-            <span className="text-3xl font-light text-slate-500 mb-2 tabular-nums">{secondsStr}</span>
-          </div>
+        <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 36, fontWeight: 700, color: C.text }}>
+          {timeStr}
         </div>
-
-        {/* Weather */}
-        <div className="text-right min-w-[160px]">
-          {cond && !weatherError ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.amber }}>
+          {!weatherError && cond ? (
             <>
-              <div className="flex items-center justify-end gap-3">
-                <span className="text-4xl">{weatherEmoji}</span>
-                <span className="text-4xl font-bold text-cyan-400">{tempF}</span>
-              </div>
-              <p className="text-slate-400 text-sm mt-1">{weatherDesc}</p>
-              <p className="text-slate-600 text-xs">
-                {cond.humidity}% humidity · {cond.windspeedMiles} mph wind
-              </p>
+              <Zap style={{ width: 18, height: 18, color: C.amber }} />
+              <span style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{tempF}</span>
             </>
           ) : (
-            <span className="text-slate-600 text-sm">{weatherError ? 'Weather unavailable' : '...'}</span>
+            <span style={{ fontSize: 13, color: C.dimmer }}>—</span>
           )}
         </div>
       </div>
 
-      {/* Accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mx-10 mb-6" />
+      {/* Main 3-col grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr 220px', gap: 20, padding: '0 32px 28px', flex: 1, minHeight: 0 }}>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-3 gap-6 px-10 pb-8" style={{ height: 'calc(100vh - 200px)' }}>
-
-        {/* Left — Routines */}
-        <div className="flex flex-col gap-4 overflow-auto">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Daily Routines</h2>
-          {ROUTINES.map(r => {
-            const isActive = r === currentRoutine;
-            return (
-              <div
-                key={r.label}
-                className={`rounded-xl p-4 border transition-all ${
-                  isActive
-                    ? 'bg-cyan-950/60 border-cyan-500/50 shadow-lg shadow-cyan-500/10'
-                    : 'bg-slate-900/40 border-slate-800/50'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{r.emoji}</span>
-                  <div>
-                    <span className={`font-semibold text-sm ${isActive ? 'text-cyan-300' : 'text-slate-300'}`}>
-                      {r.label}
-                    </span>
-                    {isActive && (
-                      <span className="ml-2 text-xs bg-cyan-500 text-black font-bold px-1.5 py-0.5 rounded">
-                        NOW
-                      </span>
-                    )}
-                    <p className="text-slate-600 text-xs">{r.timeRange}</p>
-                  </div>
-                </div>
-                <ul className="space-y-0.5">
-                  {r.tasks.map(t => (
-                    <li key={t} className="text-xs text-slate-500 flex gap-1.5 items-center">
-                      <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isActive ? 'bg-cyan-500' : 'bg-slate-700'}`} />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Center — Today's Schedule */}
-        <div className="flex flex-col gap-3 overflow-auto">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-            Today's Schedule
-            {plannerData && (
-              <span className="ml-2 normal-case text-slate-700">
-                {plannerData.events.length} events
-              </span>
-            )}
-          </h2>
-
-          {!plannerData ? (
-            <div className="text-slate-700 text-sm animate-pulse">Loading...</div>
-          ) : plannerData.events.length === 0 ? (
-            <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-6 text-center">
-              <p className="text-slate-600 text-sm">No events today</p>
-              <p className="text-slate-700 text-xs mt-1">Clear calendar ✓</p>
+        {/* LEFT — Schedule + Tasks */}
+        <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Today's Schedule */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+              <Clipboard style={{ width: 14, height: 14, color: C.dimmer }} />
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: C.dimmer }}>TODAY'S SCHEDULE</span>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Past events */}
-              {past.map(e => (
-                <div
-                  key={e.id}
-                  className="flex gap-3 items-start rounded-lg p-3 bg-slate-900/20 border border-slate-800/30 opacity-40"
-                >
-                  <div className="text-right min-w-[52px]">
-                    <p className="text-xs text-slate-600 font-mono">{formatTime(e.startDateTime)}</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-500 truncate line-through">{e.title}</p>
+            <div style={{ position: 'relative', paddingLeft: 20 }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 1, background: C.l4 }} />
+              {past.slice(-2).map(e => (
+                <div key={e.id} style={{ marginBottom: 14, opacity: 0.4 }}>
+                  <div style={{ fontSize: 12, color: C.dimmer, marginBottom: 6 }}>{formatTime(e.startDateTime)}</div>
+                  <div style={{ background: C.l2, borderRadius: 10, padding: '12px 14px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, textDecoration: 'line-through', color: C.dimmer }}>{e.title}</div>
                   </div>
                 </div>
               ))}
-
-              {/* Current / upcoming events */}
-              {upcoming.map(e => {
-                const isNow =
-                  new Date(e.startDateTime) <= now && new Date(e.endDateTime) >= now;
+              {upcoming.slice(0, 4).map(e => {
+                const isNow = new Date(e.startDateTime) <= now && new Date(e.endDateTime) >= now;
                 return (
-                  <div
-                    key={e.id}
-                    className={`flex gap-3 items-start rounded-xl p-3 border transition-all ${
-                      isNow
-                        ? 'bg-cyan-950/60 border-cyan-500/50 shadow-md shadow-cyan-500/10'
-                        : 'bg-slate-900/40 border-slate-800/50'
-                    }`}
-                  >
-                    <div className="text-right min-w-[52px]">
-                      <p className={`text-xs font-mono font-semibold ${isNow ? 'text-cyan-400' : 'text-slate-500'}`}>
-                        {formatTime(e.startDateTime)}
-                      </p>
-                      <p className="text-xs text-slate-700 font-mono">{formatTime(e.endDateTime)}</p>
+                  <div key={e.id} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: isNow ? C.amber : C.dimmer, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {formatTime(e.startDateTime)}
+                      {isNow && <span style={{ width: 5, height: 5, borderRadius: 3, background: C.amber, display: 'inline-block' }} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isNow ? 'text-cyan-200' : 'text-slate-300'}`}>
-                        {isNow && <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 mr-1.5 mb-0.5 animate-pulse" />}
-                        {e.title}
-                      </p>
-                      {e.location && (
-                        <p className="text-xs text-slate-600 truncate mt-0.5">📍 {e.location}</p>
-                      )}
-                      {e.isAllDay && (
-                        <span className="text-xs text-slate-600">All day</span>
-                      )}
+                    <div style={{ background: isNow ? C.l3 : C.l2, borderRadius: 10, padding: '12px 14px', border: isNow ? `1px solid ${C.amber}33` : '1px solid transparent' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isNow ? 6 : 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: isNow ? 600 : 500, color: isNow ? C.text : C.dim }}>{e.title}</div>
+                        {isNow && <span style={{ fontSize: 11, color: C.amber, background: `${C.amber}20`, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>ACTIVE</span>}
+                      </div>
+                      {e.location && <div style={{ fontSize: 11, color: C.blue, marginTop: 2 }}>{e.location}</div>}
                     </div>
                   </div>
                 );
               })}
+              {!plannerData && <div style={{ fontSize: 13, color: C.dimmer }}>Loading...</div>}
+              {plannerData && plannerData.events.length === 0 && (
+                <div style={{ background: C.l2, borderRadius: 10, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 13, color: C.dimmer }}>No events today</div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Pending Tasks */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: C.dimmer }}>PENDING TASKS</span>
+              {plannerData && plannerData.overdueTasks.length > 0 && (
+                <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>{plannerData.overdueTasks.length} OVERDUE</span>
+              )}
+            </div>
+            {plannerData?.overdueTasks.slice(0, 3).map(t => (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
+                <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${C.red}`, background: 'transparent', marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.red }}>{t.title}</div>
+                  <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>OVERDUE</div>
+                </div>
+              </div>
+            ))}
+            {plannerData?.tasks.slice(0, 4).map(t => (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
+                <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${C.l4}`, background: 'transparent', marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{t.title}</div>
+                  <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>
+                    {(t as Task & { priority?: string }).priority === 'high' ? 'HIGH PRIORITY' : 'FLEXIBLE'}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {plannerData && plannerData.tasks.length === 0 && plannerData.overdueTasks.length === 0 && (
+              <div style={{ fontSize: 13, color: C.dimmer, textAlign: 'center', padding: '16px 0' }}>All caught up ✓</div>
+            )}
+          </div>
         </div>
 
-        {/* Right — Tasks */}
-        <div className="flex flex-col gap-4 overflow-auto">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Tasks & Focus</h2>
-
-          {/* Overdue */}
-          {plannerData && plannerData.overdueTasks.length > 0 && (
-            <div className="bg-red-950/40 border border-red-800/40 rounded-xl p-4">
-              <p className="text-xs font-semibold text-red-500 uppercase tracking-widest mb-2">
-                ⚠ Overdue ({plannerData.overdueTasks.length})
-              </p>
-              <ul className="space-y-1.5">
-                {plannerData.overdueTasks.slice(0, 5).map(t => (
-                  <li key={t.id} className="flex gap-2 items-start text-sm text-red-300">
-                    <span className="flex-shrink-0 mt-0.5">•</span>
-                    <span className="truncate">{t.title}</span>
-                  </li>
-                ))}
-                {plannerData.overdueTasks.length > 5 && (
-                  <li className="text-xs text-red-700">+{plannerData.overdueTasks.length - 5} more</li>
+        {/* CENTER — Current Focus + Daily Routines */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+          {/* Current Focus */}
+          <div style={{ background: C.l2, borderRadius: 12, padding: '24px' }}>
+            <div style={{ fontSize: 11, color: C.dimmer, letterSpacing: '0.08em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Zap style={{ width: 13, height: 13, color: C.dimmer }} /> CURRENT FOCUS
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 28, fontWeight: 800, color: C.text }}>
+                  {activeEvent ? activeEvent.title : nextEvent ? nextEvent.title : 'Free Time'}
+                </div>
+                {(activeEvent || nextEvent) && (
+                  <div style={{ fontSize: 12, color: C.dimmer, marginTop: 4 }}>
+                    {activeEvent ? 'In progress' : `Up next at ${formatTime(nextEvent!.startDateTime)}`}
+                  </div>
                 )}
-              </ul>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 40, fontWeight: 800, color: C.amber, lineHeight: 1 }}>
+                  {upcoming.length > 0 ? upcoming.length : '—'}
+                </div>
+                <div style={{ fontSize: 11, color: C.dimmer, letterSpacing: '0.08em' }}>EVENTS LEFT</div>
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* High priority today */}
-          {plannerData && plannerData.tasks.filter(t => t.priority === 'high').length > 0 && (
-            <div className="bg-orange-950/40 border border-orange-800/40 rounded-xl p-4">
-              <p className="text-xs font-semibold text-orange-400 uppercase tracking-widest mb-2">
-                🎯 High Priority Today
-              </p>
-              <ul className="space-y-1.5">
-                {plannerData.tasks
-                  .filter(t => t.priority === 'high')
-                  .slice(0, 4)
-                  .map(t => (
-                    <li key={t.id} className="flex gap-2 items-start text-sm text-orange-200">
-                      <span className="flex-shrink-0 mt-0.5 text-orange-500">●</span>
-                      <span className="truncate">{t.title}</span>
-                    </li>
-                  ))}
-              </ul>
+          {/* Daily Routines 2x2 */}
+          <div style={{ background: C.l2, borderRadius: 12, padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: C.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CheckCircle style={{ width: 14, height: 14 }} /> DAILY ROUTINES
+              </div>
             </div>
-          )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 12, color: C.dimmer }}>MORNING STARTUP</span>
+              <span style={{ fontSize: 12, color: C.green }}>{Object.values(routineDone).filter(Boolean).length}/{MORNING_ROUTINES.length} Done</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {MORNING_ROUTINES.map(r => (
+                <div key={r.id} onClick={() => toggleRoutine(r.id)}
+                  style={{ background: routineDone[r.id] ? C.l4 : C.l3, borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.2s' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 11, background: routineDone[r.id] ? C.blue : 'transparent', border: `1.5px solid ${routineDone[r.id] ? C.blue : C.l4}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {routineDone[r.id] && <span style={{ fontSize: 13, color: C.bg, fontWeight: 700 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: routineDone[r.id] ? C.text : C.dimmer, textDecoration: routineDone[r.id] ? 'line-through' : 'none' }}>{r.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-          {/* Due today */}
-          {plannerData && plannerData.tasks.filter(t => t.priority !== 'high').length > 0 && (
-            <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-4 flex-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
-                Due Today
-              </p>
-              <ul className="space-y-1.5">
-                {plannerData.tasks
-                  .filter(t => t.priority !== 'high')
-                  .slice(0, 8)
-                  .map(t => (
-                    <li key={t.id} className="flex gap-2 items-start text-sm">
-                      <span className={`flex-shrink-0 mt-0.5 text-xs ${priorityColor(t.priority)}`}>◆</span>
-                      <span className="text-slate-400 truncate">{t.title}</span>
-                    </li>
-                  ))}
-                {plannerData.tasks.filter(t => t.priority !== 'high').length > 8 && (
-                  <li className="text-xs text-slate-700">
-                    +{plannerData.tasks.filter(t => t.priority !== 'high').length - 8} more
-                  </li>
-                )}
-              </ul>
+        {/* RIGHT — Stats + Up Next + Snippet + Environment */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+          {/* Stats 2x2 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ background: C.l2, borderRadius: 10, padding: '16px', textAlign: 'center' }}>
+              <CheckCircle style={{ width: 20, height: 20, color: C.dimmer, margin: '0 auto' }} />
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, fontWeight: 800, marginTop: 8, color: C.text }}>{tasksDone}</div>
+              <div style={{ fontSize: 10, color: C.dimmer, letterSpacing: '0.06em' }}>TASKS DONE</div>
             </div>
-          )}
+            <div style={{ background: C.l2, borderRadius: 10, padding: '16px', textAlign: 'center' }}>
+              <CalendarDays style={{ width: 20, height: 20, color: C.amber, margin: '0 auto' }} />
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, fontWeight: 800, color: C.amber, marginTop: 8 }}>{eventsLeft}</div>
+              <div style={{ fontSize: 10, color: C.dimmer, letterSpacing: '0.06em' }}>EVENTS LEFT</div>
+            </div>
+          </div>
 
-          {plannerData && plannerData.tasks.length === 0 && plannerData.overdueTasks.length === 0 && (
-            <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-6 text-center">
-              <p className="text-2xl mb-2">✓</p>
-              <p className="text-slate-500 text-sm">All caught up!</p>
-              <p className="text-slate-700 text-xs mt-1">No tasks due today</p>
+          {/* Up Next */}
+          <div style={{ background: C.l2, borderRadius: 10, padding: '16px' }}>
+            <div style={{ fontSize: 11, color: C.dimmer, letterSpacing: '0.06em', marginBottom: 12 }}>UP NEXT</div>
+            {upcoming.slice(0, 3).map(e => (
+              <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: 3, background: C.blue, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: C.dim }}>{e.title}</span>
+                </div>
+                <span style={{ fontSize: 12, color: C.dimmer, flexShrink: 0 }}>{formatTime(e.startDateTime)}</span>
+              </div>
+            ))}
+            {upcoming.length === 0 && <div style={{ fontSize: 12, color: C.dimmer }}>No upcoming events</div>}
+          </div>
+
+          {/* Daily Snippet */}
+          <div style={{ background: C.l2, borderRadius: 10, padding: '16px' }}>
+            <div style={{ fontSize: 10, color: C.dimmer, letterSpacing: '0.08em', marginBottom: 10 }}>✦ DAILY SNIPPET</div>
+            <p style={{ fontSize: 13, fontStyle: 'italic', color: C.dim, lineHeight: 1.6, margin: 0 }}>{DAILY_SNIPPET.quote}</p>
+            <div style={{ fontSize: 11, color: C.dimmer, marginTop: 8 }}>— {DAILY_SNIPPET.author}</div>
+          </div>
+
+          {/* Environment */}
+          <div style={{ background: C.l2, borderRadius: 10, padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: C.dimmer, letterSpacing: '0.08em' }}>ENVIRONMENT</div>
+              {!weatherError && cond && <span style={{ width: 6, height: 6, borderRadius: 3, background: C.green }} />}
             </div>
-          )}
+            {!weatherError && cond ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <Thermometer style={{ width: 16, height: 16, color: C.dimmer, margin: '0 auto' }} />
+                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 22, fontWeight: 700, marginTop: 4, color: C.text }}>{cond.temp_F}°F</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <Droplets style={{ width: 16, height: 16, color: C.blue, margin: '0 auto' }} />
+                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 22, fontWeight: 700, marginTop: 4, color: C.text }}>{humidity}%</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: C.dimmer }}>Weather unavailable</div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Bottom status bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-800/50 bg-[#080812]/80 backdrop-blur px-10 py-2 flex justify-between items-center">
-        <span className="text-slate-700 text-xs">blackbox.local · Pi Dashboard</span>
-        <span className="text-slate-700 text-xs">
-          {plannerData ? `Synced ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Syncing...'}
+      {/* Status bar */}
+      <div style={{ borderTop: `1px solid ${C.l3}40`, background: `${C.bg}cc`, padding: '6px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 11, color: C.dimmer }}>blackbox.local · Pi Dashboard</span>
+        <span style={{ fontSize: 11, color: C.dimmer }}>
+          {plannerData ? `Synced ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Syncing...'}
         </span>
       </div>
     </div>
