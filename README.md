@@ -11,6 +11,7 @@ A self-hosted homelab and dashboard stack running on a Raspberry Pi 5. Bundles a
 
 ## Table of Contents
 
+0. [Screens](#0-screens)
 1. [Platform Overview](#1-platform-overview)
 2. [Prerequisites](#2-prerequisites)
 3. [Base System Setup](#3-base-system-setup)
@@ -29,6 +30,56 @@ A self-hosted homelab and dashboard stack running on a Raspberry Pi 5. Bundles a
 16. [Optional Services](#16-optional-services)
 17. [Open Source Software & Libraries Used](#17-open-source-software--libraries-used)
 18. [Maintenance](#18-maintenance)
+
+---
+
+## 0. Screens
+
+A guided tour of the seven main views in the Pi Dashboard. All assets live under `docs/screenshots/` — drop the captured images in there with the filenames below.
+
+### System
+
+![System overview](docs/screenshots/01-system-overview.png)
+
+The default landing view — `NODE-01` status, command palette, real-time CPU / memory / disk / core temp / uptime tiles, every Docker container with up-time, smart-home rollups (lights on, switches on, climate, media), live security feeds, and a network-interface table (eth0, tailscale0, docker0, br-*).
+
+### Smart Home — Environment Control
+
+![Environment Control](docs/screenshots/02-smart-home.png)
+
+Direct controls for the Home Assistant entities surfaced through the dashboard: Light Fixtures cards (per-room toggle + brightness + Color & Effects), the Smart Lights list with one-tap toggles, Media Players, and an integrated Surveillance grid streaming the go2rtc feeds with a live `● REC` indicator.
+
+### Calendar & Tasks
+
+![Calendar](docs/screenshots/03-calendar.png)
+
+Unified calendar + tasks view with month / week / day / 2-month / circular layouts. The header gear opens **Calendar Settings** — connect Google / Microsoft / iCloud / generic CalDAV providers and manage colored projects via the shared `ColorPicker` component (`client/src/components/shared/ColorPicker.tsx`).
+
+### AI Chat
+
+![AI Chat](docs/screenshots/04-ai-chat.png)
+
+Streaming chat console wired to **Ollama** by default (model `llama3.2:latest` is shown) with optional Claude API fallback. Includes a context attachment chip, voice input, and contextual command suggestions ("Run diagnostic on router") backed by `/api/chat/ollama` and `/api/chat/claude`.
+
+### Planner
+
+![Planner](docs/screenshots/05-planner.png)
+
+Daily focus board: today's schedule pulled from synced calendars, current focus block, daily routines (Hydrate / Review Logs / Clear Inbox / Set Priorities), an "Up Next" reminder, a daily snippet/quote, and an environment readout (temp + humidity). Pending tasks at left flag overdue items in red.
+
+### Vault
+
+![Vault](docs/screenshots/06-vault.png)
+
+Markdown / code editor scoped to `/home/jwcollie` with a tree explorer, bookmarked roots (Home / Dashboard / Shared / Documents), and a side-panel **Assistant** wired to a local model (`llama3.2`) for context-aware editing. Supports `.md`, `.txt`, `.py`, `.js`, `.ts`, `.json` and more — backed by CouchDB for Obsidian LiveSync compatibility.
+
+### Settings
+
+![Settings](docs/screenshots/07-settings.png)
+
+Modal preferences for **System** (node name shown in header, default landing tab, stats refresh interval), **Connections** (Home Assistant / go2rtc / Ollama URLs and tokens), **AI & Models**, **Calendar** (OAuth provider setup), **Smart Home**, **Notifications**, and an **About** pane.
+
+> **Capture method:** screenshots were taken from a 1440×900 viewport via the Claude-in-Chrome MCP, saved to the workstation, and committed under `Dashboard/docs/screenshots/`. To re-record, open `http://blackbox/`, click each sidebar icon (System → Smart Home → Calendar → AI Chat → Planner → Vault → Settings), and capture the full viewport.
 
 ---
 
