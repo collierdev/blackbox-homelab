@@ -1,3 +1,4 @@
+![Banner](docs/screenshots/banner.png)
 # Blackbox Homelab — Raspberry Pi 5 Platform
 
 A self-hosted homelab and dashboard stack running on a Raspberry Pi 5. Bundles a custom React/Node dashboard, Home Assistant, MQTT, Govee bridge, media servers, camera streaming, automation, and a graph database — all behind an nginx reverse proxy with friendly `*.blackbox` URLs.
