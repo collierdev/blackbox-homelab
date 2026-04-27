@@ -7,34 +7,44 @@ exports.pushEventToMicrosoft = pushEventToMicrosoft;
 exports.deleteEventFromMicrosoft = deleteEventFromMicrosoft;
 const microsoft_graph_client_1 = require("@microsoft/microsoft-graph-client");
 const syncAccount_1 = require("../../models/syncAccount");
+const providerConfig_1 = require("../../models/providerConfig");
 const event_1 = require("../../models/event");
-const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID || '';
-const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || '';
-const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || 'common';
-const MICROSOFT_REDIRECT_URI = process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:3001/api/sync/microsoft/callback';
+async function getMicrosoftConfig() {
+    const cfg = await (0, providerConfig_1.getProviderOAuthConfig)('microsoft');
+    if (!cfg) {
+        throw new Error('Microsoft OAuth is not configured. Configure client ID and secret in Settings > Calendar.');
+    }
+    return {
+        clientId: cfg.clientId,
+        clientSecret: cfg.clientSecret,
+        tenantId: cfg.tenantId || 'common',
+    };
+}
 /**
  * Get authorization URL for Microsoft OAuth
  */
-function getAuthUrl() {
+async function getAuthUrl(redirectUri) {
+    const config = await getMicrosoftConfig();
     const scopes = ['Calendars.ReadWrite', 'offline_access'];
     const scopeString = scopes.join(' ');
-    return `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize?` +
-        `client_id=${MICROSOFT_CLIENT_ID}` +
+    return `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/authorize?` +
+        `client_id=${config.clientId}` +
         `&response_type=code` +
-        `&redirect_uri=${encodeURIComponent(MICROSOFT_REDIRECT_URI)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&scope=${encodeURIComponent(scopeString)}` +
         `&response_mode=query`;
 }
 /**
  * Exchange authorization code for tokens
  */
-async function getTokensFromCode(code) {
-    const tokenEndpoint = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/token`;
+async function getTokensFromCode(code, redirectUri) {
+    const config = await getMicrosoftConfig();
+    const tokenEndpoint = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`;
     const params = new URLSearchParams();
-    params.append('client_id', MICROSOFT_CLIENT_ID);
-    params.append('client_secret', MICROSOFT_CLIENT_SECRET);
+    params.append('client_id', config.clientId);
+    params.append('client_secret', config.clientSecret);
     params.append('code', code);
-    params.append('redirect_uri', MICROSOFT_REDIRECT_URI);
+    params.append('redirect_uri', redirectUri);
     params.append('grant_type', 'authorization_code');
     const response = await fetch(tokenEndpoint, {
         method: 'POST',
@@ -51,11 +61,11 @@ async function getTokensFromCode(code) {
 /**
  * Refresh access token
  */
-async function refreshAccessToken(refreshToken) {
-    const tokenEndpoint = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/token`;
+async function refreshAccessToken(refreshToken, config) {
+    const tokenEndpoint = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`;
     const params = new URLSearchParams();
-    params.append('client_id', MICROSOFT_CLIENT_ID);
-    params.append('client_secret', MICROSOFT_CLIENT_SECRET);
+    params.append('client_id', config.clientId);
+    params.append('client_secret', config.clientSecret);
     params.append('refresh_token', refreshToken);
     params.append('grant_type', 'refresh_token');
     const response = await fetch(tokenEndpoint, {
@@ -85,23 +95,25 @@ function createGraphClient(accessToken) {
  */
 async function syncMicrosoftCalendar(syncAccountId) {
     try {
+        const oauthConfig = await getMicrosoftConfig();
         let syncAccount = await (0, syncAccount_1.getSyncAccount)(syncAccountId);
         if (!syncAccount) {
             throw new Error('Sync account not found');
         }
         // Refresh token if needed
         if (syncAccount.expiresAt && new Date(syncAccount.expiresAt) < new Date()) {
-            if (!syncAccount.refreshToken) {
+            const refreshToken = (0, syncAccount_1.getDecryptedRefreshToken)(syncAccount);
+            if (!refreshToken) {
                 throw new Error('No refresh token available');
             }
-            const tokens = await refreshAccessToken(syncAccount.refreshToken);
+            const tokens = await refreshAccessToken(refreshToken, oauthConfig);
             await (0, syncAccount_1.updateSyncAccount)(syncAccountId, {
                 accessToken: tokens.access_token,
                 expiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
             });
             syncAccount = await (0, syncAccount_1.getSyncAccount)(syncAccountId);
         }
-        const client = createGraphClient(syncAccount.accessToken);
+        const client = createGraphClient((0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
         // Fetch events from the last 30 days and next 90 days
         const startDateTime = new Date();
         startDateTime.setDate(startDateTime.getDate() - 30);
@@ -184,7 +196,7 @@ async function pushEventToMicrosoft(syncAccountId, eventData) {
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
-    const client = createGraphClient(syncAccount.accessToken);
+    const client = createGraphClient((0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
     const msEvent = {
         subject: eventData.title,
         body: {
@@ -217,7 +229,7 @@ async function deleteEventFromMicrosoft(syncAccountId, remoteId) {
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
-    const client = createGraphClient(syncAccount.accessToken);
+    const client = createGraphClient((0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
     await client
         .api(`/me/calendar/events/${remoteId}`)
         .delete();

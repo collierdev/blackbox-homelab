@@ -7,15 +7,24 @@ exports.pushEventToGoogle = pushEventToGoogle;
 exports.deleteEventFromGoogle = deleteEventFromGoogle;
 const googleapis_1 = require("googleapis");
 const syncAccount_1 = require("../../models/syncAccount");
+const providerConfig_1 = require("../../models/providerConfig");
 const event_1 = require("../../models/event");
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/sync/google/callback';
-const oauth2Client = new googleapis_1.google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+async function getGoogleConfig() {
+    const cfg = await (0, providerConfig_1.getProviderOAuthConfig)('google');
+    if (!cfg) {
+        throw new Error('Google OAuth is not configured. Configure client ID and secret in Settings > Calendar.');
+    }
+    return { clientId: cfg.clientId, clientSecret: cfg.clientSecret };
+}
+function buildOAuthClient(config, redirectUri) {
+    return new googleapis_1.google.auth.OAuth2(config.clientId, config.clientSecret, redirectUri);
+}
 /**
  * Get authorization URL for Google OAuth
  */
-function getAuthUrl() {
+async function getAuthUrl(redirectUri) {
+    const config = await getGoogleConfig();
+    const oauth2Client = buildOAuthClient(config, redirectUri);
     const scopes = [
         'https://www.googleapis.com/auth/calendar.readonly',
         'https://www.googleapis.com/auth/calendar.events',
@@ -29,7 +38,9 @@ function getAuthUrl() {
 /**
  * Exchange authorization code for tokens
  */
-async function getTokensFromCode(code) {
+async function getTokensFromCode(code, redirectUri) {
+    const config = await getGoogleConfig();
+    const oauth2Client = buildOAuthClient(config, redirectUri);
     const { tokens } = await oauth2Client.getToken(code);
     return tokens;
 }
@@ -38,14 +49,18 @@ async function getTokensFromCode(code) {
  */
 async function syncGoogleCalendar(syncAccountId) {
     try {
+        const config = await getGoogleConfig();
+        const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
         const syncAccount = await (0, syncAccount_1.getSyncAccount)(syncAccountId);
         if (!syncAccount) {
             throw new Error('Sync account not found');
         }
+        const accessToken = (0, syncAccount_1.getDecryptedAccessToken)(syncAccount);
+        const refreshToken = (0, syncAccount_1.getDecryptedRefreshToken)(syncAccount);
         // Set credentials
         oauth2Client.setCredentials({
-            access_token: syncAccount.accessToken,
-            refresh_token: syncAccount.refreshToken,
+            access_token: accessToken,
+            refresh_token: refreshToken,
         });
         const calendar = googleapis_1.google.calendar({ version: 'v3', auth: oauth2Client });
         // Fetch events from the last 30 days and next 90 days
@@ -131,13 +146,17 @@ function getColorFromGoogle(colorId) {
  * Push local event to Google Calendar
  */
 async function pushEventToGoogle(syncAccountId, eventData) {
+    const config = await getGoogleConfig();
+    const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
     const syncAccount = await (0, syncAccount_1.getSyncAccount)(syncAccountId);
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
+    const accessToken = (0, syncAccount_1.getDecryptedAccessToken)(syncAccount);
+    const refreshToken = (0, syncAccount_1.getDecryptedRefreshToken)(syncAccount);
     oauth2Client.setCredentials({
-        access_token: syncAccount.accessToken,
-        refresh_token: syncAccount.refreshToken,
+        access_token: accessToken,
+        refresh_token: refreshToken,
     });
     const calendar = googleapis_1.google.calendar({ version: 'v3', auth: oauth2Client });
     const googleEvent = {
@@ -161,13 +180,17 @@ async function pushEventToGoogle(syncAccountId, eventData) {
  * Delete event from Google Calendar
  */
 async function deleteEventFromGoogle(syncAccountId, remoteId) {
+    const config = await getGoogleConfig();
+    const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
     const syncAccount = await (0, syncAccount_1.getSyncAccount)(syncAccountId);
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
+    const accessToken = (0, syncAccount_1.getDecryptedAccessToken)(syncAccount);
+    const refreshToken = (0, syncAccount_1.getDecryptedRefreshToken)(syncAccount);
     oauth2Client.setCredentials({
-        access_token: syncAccount.accessToken,
-        refresh_token: syncAccount.refreshToken,
+        access_token: accessToken,
+        refresh_token: refreshToken,
     });
     const calendar = googleapis_1.google.calendar({ version: 'v3', auth: oauth2Client });
     await calendar.events.delete({

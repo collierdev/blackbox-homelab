@@ -100,7 +100,7 @@ async function syncCalDAVCalendar(syncAccountId) {
             throw new Error('Sync account not found');
         }
         // For CalDAV, we store username in accountIdentifier and password in accessToken
-        const client = await createClient(syncAccount.accountIdentifier, syncAccount.accessToken);
+        const client = await createClient(syncAccount.accountIdentifier, (0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
         // Fetch calendars
         const calendars = await client.fetchCalendars();
         if (calendars.length === 0) {
@@ -208,7 +208,7 @@ async function pushEventToCalDAV(syncAccountId, eventData) {
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
-    const client = await createClient(syncAccount.accountIdentifier, syncAccount.accessToken);
+    const client = await createClient(syncAccount.accountIdentifier, (0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
     const calendars = await client.fetchCalendars();
     if (calendars.length === 0) {
         throw new Error('No calendars found');
@@ -231,7 +231,7 @@ async function deleteEventFromCalDAV(syncAccountId, remoteId) {
     if (!syncAccount) {
         throw new Error('Sync account not found');
     }
-    const client = await createClient(syncAccount.accountIdentifier, syncAccount.accessToken);
+    const client = await createClient(syncAccount.accountIdentifier, (0, syncAccount_1.getDecryptedAccessToken)(syncAccount));
     const calendars = await client.fetchCalendars();
     if (calendars.length === 0) {
         throw new Error('No calendars found');

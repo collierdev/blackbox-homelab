@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Clipboard, Zap, CheckCircle, CalendarDays, Thermometer, Droplets } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Clipboard, Zap, CheckCircle, CalendarDays, Thermometer, Droplets, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Event, Task } from '../types';
 
 interface PlannerData {
@@ -45,6 +45,11 @@ export function DayPlanner() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherError, setWeatherError] = useState(false);
   const [routineDone, setRoutineDone] = useState<Record<number, boolean>>({});
+  const [completingTaskIds, setCompletingTaskIds] = useState<Record<string, boolean>>({});
+  const pendingTasksScrollRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollPendingUp, setCanScrollPendingUp] = useState(false);
+  const [canScrollPendingDown, setCanScrollPendingDown] = useState(false);
+  const [isDraggingPending, setIsDraggingPending] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -74,6 +79,87 @@ export function DayPlanner() {
     return () => { clearInterval(pi); clearInterval(wi); };
   }, [fetchPlanner, fetchWeather]);
 
+  const updatePendingScrollButtons = useCallback(() => {
+    const el = pendingTasksScrollRef.current;
+    if (!el) {
+      setCanScrollPendingUp(false);
+      setCanScrollPendingDown(false);
+      return;
+    }
+    setCanScrollPendingUp(el.scrollTop > 2);
+    setCanScrollPendingDown(el.scrollTop + el.clientHeight < el.scrollHeight - 2);
+  }, []);
+
+  useEffect(() => {
+    updatePendingScrollButtons();
+  }, [plannerData, updatePendingScrollButtons]);
+
+  const scrollPendingTasks = (direction: 'up' | 'down') => {
+    const el = pendingTasksScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ top: direction === 'up' ? -180 : 180, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const el = pendingTasksScrollRef.current;
+    if (!el) return;
+
+    let isDown = false;
+    let startY = 0;
+    let startTop = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDown = true;
+      setIsDraggingPending(true);
+      startY = e.pageY;
+      startTop = el.scrollTop;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none';
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDown) return;
+      const dy = e.pageY - startY;
+      el.scrollTop = startTop - dy;
+    };
+    const endDrag = () => {
+      if (!isDown) return;
+      isDown = false;
+      setIsDraggingPending(false);
+      el.style.cursor = 'grab';
+      el.style.userSelect = 'auto';
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', endDrag);
+    el.addEventListener('scroll', updatePendingScrollButtons);
+    el.style.cursor = 'grab';
+
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', endDrag);
+      el.removeEventListener('scroll', updatePendingScrollButtons);
+      el.style.cursor = 'auto';
+      el.style.userSelect = 'auto';
+    };
+  }, [updatePendingScrollButtons]);
+
+  const markTaskComplete = useCallback(async (taskId: string) => {
+    if (completingTaskIds[taskId]) return;
+    setCompletingTaskIds((prev) => ({ ...prev, [taskId]: true }));
+    try {
+      const res = await fetch(`/api/todos/${taskId}/complete`, { method: 'POST' });
+      if (res.ok) {
+        await fetchPlanner();
+      }
+    } catch {
+      // no-op
+    } finally {
+      setCompletingTaskIds((prev) => ({ ...prev, [taskId]: false }));
+    }
+  }, [completingTaskIds, fetchPlanner]);
+
   const hour = now.getHours();
   const greeting = hour < 12 ? 'GOOD MORNING' : hour < 17 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -85,6 +171,8 @@ export function DayPlanner() {
 
   const upcoming = plannerData?.events.filter(e => new Date(e.endDateTime) >= now) || [];
   const past = plannerData?.events.filter(e => new Date(e.endDateTime) < now) || [];
+  const overduePendingTasks = plannerData?.overdueTasks.filter((t: Task & { status?: string }) => t.status !== 'completed') || [];
+  const regularPendingTasks = plannerData?.tasks.filter((t: Task & { status?: string }) => t.status !== 'completed') || [];
 
   // Current focus: event happening right now, or next upcoming event
   const activeEvent = upcoming.find(e => new Date(e.startDateTime) <= now);
@@ -99,6 +187,7 @@ export function DayPlanner() {
 
   return (
     <div style={{ height: '100%', background: C.bg, color: C.text, fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+      <style>{`.pending-tasks-scroll::-webkit-scrollbar { display: none; }`}</style>
       {/* Top bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 32px 20px', flexShrink: 0 }}>
         <div>
@@ -172,33 +261,129 @@ export function DayPlanner() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: C.dimmer }}>PENDING TASKS</span>
-              {plannerData && plannerData.overdueTasks.length > 0 && (
-                <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>{plannerData.overdueTasks.length} OVERDUE</span>
+              {plannerData && overduePendingTasks.length > 0 && (
+                <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>{overduePendingTasks.length} OVERDUE</span>
               )}
             </div>
-            {plannerData?.overdueTasks.slice(0, 3).map(t => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
-                <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${C.red}`, background: 'transparent', marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: C.red }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>OVERDUE</div>
-                </div>
-              </div>
-            ))}
-            {plannerData?.tasks.slice(0, 4).map(t => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
-                <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${C.l4}`, background: 'transparent', marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>
-                    {(t as Task & { priority?: string }).priority === 'high' ? 'HIGH PRIORITY' : 'FLEXIBLE'}
+            <div style={{ position: 'relative' }}>
+              {canScrollPendingUp && (
+                <button
+                  onClick={() => scrollPendingTasks('up')}
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    top: 6,
+                    zIndex: 2,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    border: `1px solid ${C.l4}`,
+                    background: C.l2,
+                    color: C.dimmer,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    opacity: 0.9,
+                  }}
+                  title="Scroll up"
+                >
+                  <ChevronUp style={{ width: 14, height: 14 }} />
+                </button>
+              )}
+              {canScrollPendingDown && (
+                <button
+                  onClick={() => scrollPendingTasks('down')}
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    bottom: 6,
+                    zIndex: 2,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    border: `1px solid ${C.l4}`,
+                    background: C.l2,
+                    color: C.dimmer,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    opacity: 0.9,
+                  }}
+                  title="Scroll down"
+                >
+                  <ChevronDown style={{ width: 14, height: 14 }} />
+                </button>
+              )}
+              <div
+                ref={pendingTasksScrollRef}
+                className="pending-tasks-scroll"
+                style={{
+                  maxHeight: 280,
+                  overflowY: 'auto',
+                  paddingRight: 4,
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  userSelect: isDraggingPending ? 'none' : 'auto',
+                }}
+              >
+              {overduePendingTasks.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
+                  <button
+                    onClick={() => void markTaskComplete(t.id)}
+                    disabled={Boolean(completingTaskIds[t.id])}
+                    title="Mark complete"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 4,
+                      border: `1.5px solid ${C.red}`,
+                      background: 'transparent',
+                      marginTop: 1,
+                      flexShrink: 0,
+                      cursor: completingTaskIds[t.id] ? 'not-allowed' : 'pointer',
+                      opacity: completingTaskIds[t.id] ? 0.6 : 1,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: C.red }}>{t.title}</div>
+                    <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>OVERDUE</div>
                   </div>
                 </div>
+              ))}
+              {regularPendingTasks.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: `1px solid ${C.l3}` }}>
+                  <button
+                    onClick={() => void markTaskComplete(t.id)}
+                    disabled={Boolean(completingTaskIds[t.id])}
+                    title="Mark complete"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 4,
+                      border: `1.5px solid ${C.l4}`,
+                      background: 'transparent',
+                      marginTop: 1,
+                      flexShrink: 0,
+                      cursor: completingTaskIds[t.id] ? 'not-allowed' : 'pointer',
+                      opacity: completingTaskIds[t.id] ? 0.6 : 1,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{t.title}</div>
+                    <div style={{ fontSize: 11, color: C.dimmer, marginTop: 2 }}>
+                      {(t as Task & { priority?: string }).priority === 'high' ? 'HIGH PRIORITY' : 'FLEXIBLE'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {plannerData && regularPendingTasks.length === 0 && overduePendingTasks.length === 0 && (
+                <div style={{ fontSize: 13, color: C.dimmer, textAlign: 'center', padding: '16px 0' }}>All caught up ✓</div>
+              )}
               </div>
-            ))}
-            {plannerData && plannerData.tasks.length === 0 && plannerData.overdueTasks.length === 0 && (
-              <div style={{ fontSize: 13, color: C.dimmer, textAlign: 'center', padding: '16px 0' }}>All caught up ✓</div>
-            )}
+            </div>
           </div>
         </div>
 

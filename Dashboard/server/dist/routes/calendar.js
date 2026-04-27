@@ -83,6 +83,17 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to delete event' });
     }
 });
+// Delete all events (dangerous operation)
+router.delete('/', async (_req, res) => {
+    try {
+        const deletedCount = await (0, event_1.deleteAllEvents)();
+        res.json({ success: true, deletedCount });
+    }
+    catch (error) {
+        console.error('Error clearing all events:', error);
+        res.status(500).json({ error: 'Failed to clear all events' });
+    }
+});
 // Mark event as completed
 router.post('/:id/complete', async (req, res) => {
     try {

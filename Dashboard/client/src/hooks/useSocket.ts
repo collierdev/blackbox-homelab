@@ -26,6 +26,36 @@ export function useSocket() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
+  const refreshHaDevices = useCallback(async (): Promise<void> => {
+    try {
+      const [statusRes, devicesRes] = await Promise.all([
+        fetch(`${API_URL}/api/homeassistant/status`),
+        fetch(`${API_URL}/api/homeassistant/devices`)
+      ]);
+
+      if (statusRes.ok) {
+        const status = await statusRes.json();
+        setHaStatus(status);
+      }
+
+      if (devicesRes.ok) {
+        const devices = await devicesRes.json();
+        setHaDevices(devices);
+      }
+    } catch {
+      // Silent fail - socket polling will recover state on next interval
+    }
+  }, []);
+
+  const refreshHaDevicesWithDelay = useCallback(async (): Promise<void> => {
+    await refreshHaDevices();
+    // Some cloud-backed integrations (for example Govee) can report
+    // state changes slightly after service call acknowledgement.
+    setTimeout(() => {
+      void refreshHaDevices();
+    }, 1500);
+  }, [refreshHaDevices]);
+
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
 
@@ -96,11 +126,14 @@ export function useSocket() {
       const res = await fetch(`${API_URL}/api/homeassistant/entities/${entityId}/toggle`, {
         method: 'POST'
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setLightBrightness = useCallback(async (entityId: string, brightness: number) => {
     try {
@@ -109,11 +142,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brightness })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setClimateTemperature = useCallback(async (entityId: string, temperature: number) => {
     try {
@@ -170,11 +206,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rgb_color: rgb })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setLightHsColor = useCallback(async (entityId: string, hsColor: [number, number]): Promise<boolean> => {
     try {
@@ -183,11 +222,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hs_color: hsColor })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setLightColorTemp = useCallback(async (entityId: string, kelvin: number): Promise<boolean> => {
     try {
@@ -196,11 +238,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kelvin })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setLightEffect = useCallback(async (entityId: string, effect: string): Promise<boolean> => {
     try {
@@ -209,11 +254,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ effect })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   // Fixture API functions
   const createFixture = useCallback(async (data: { name: string; lightIds: string[]; icon?: string; room?: string }): Promise<LightFixture | null> => {
@@ -260,11 +308,14 @@ export function useSocket() {
       const res = await fetch(`${API_URL}/api/fixtures/${fixtureId}/toggle`, {
         method: 'POST'
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setFixtureBrightness = useCallback(async (fixtureId: string, brightness: number): Promise<boolean> => {
     try {
@@ -273,11 +324,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brightness })
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   const setFixtureColor = useCallback(async (fixtureId: string, colorValue: ColorValue): Promise<boolean> => {
     try {
@@ -303,11 +357,14 @@ export function useSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (res.ok) {
+        void refreshHaDevicesWithDelay();
+      }
       return res.ok;
     } catch {
       return false;
     }
-  }, []);
+  }, [refreshHaDevicesWithDelay]);
 
   // Calendar API functions
   const createEvent = useCallback(async (event: Partial<Event>): Promise<Event | null> => {

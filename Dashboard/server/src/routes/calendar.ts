@@ -8,6 +8,7 @@ import {
   updateEvent,
   deleteEvent,
   completeEvent,
+  deleteAllEvents,
 } from '../models/event';
 
 const router = Router();
@@ -95,6 +96,17 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
+// Delete all events (dangerous operation)
+router.delete('/', async (_req, res) => {
+  try {
+    const deletedCount = await deleteAllEvents();
+    res.json({ success: true, deletedCount });
+  } catch (error) {
+    console.error('Error clearing all events:', error);
+    res.status(500).json({ error: 'Failed to clear all events' });
   }
 });
 

@@ -87,8 +87,64 @@ export default function CalendarSettings({
     }
   };
 
-  const handleConnectCalendar = (provider: 'google' | 'microsoft' | 'caldav') => {
-    alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar sync will be available soon! OAuth integration is currently being implemented.`);
+  const handleConnectCalendar = async (provider: 'google' | 'microsoft' | 'caldav') => {
+    try {
+      if (provider === 'caldav') {
+        const serverUrl = prompt('CalDAV server URL (example: https://caldav.icloud.com)');
+        if (!serverUrl) return;
+        const username = prompt('CalDAV username (often your email)');
+        if (!username) return;
+        const password = prompt('CalDAV app password');
+        if (!password) return;
+
+        const response = await fetch('/api/sync/caldav/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serverUrl,
+            username,
+            password,
+            email: username,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.message || body.error || 'Failed to connect CalDAV calendar');
+        }
+
+        await loadSyncAccounts();
+        alert('CalDAV calendar connected and synced.');
+        return;
+      }
+
+      const popup = window.open(
+        `/api/sync/${provider}/auth`,
+        `${provider}-calendar-auth`,
+        'width=620,height=760'
+      );
+
+      if (!popup) {
+        alert('Popup blocked. Please allow popups and try again.');
+        return;
+      }
+
+      const listener = async (event: MessageEvent) => {
+        if (event.data?.source !== 'pi-dashboard-sync') return;
+        window.removeEventListener('message', listener);
+        await loadSyncAccounts();
+        if (event.data.success) {
+          alert(event.data.message || 'Calendar connected successfully.');
+        } else {
+          alert(event.data.message || 'Calendar connection failed.');
+        }
+      };
+
+      window.addEventListener('message', listener);
+    } catch (error: any) {
+      console.error('Failed to connect calendar:', error);
+      alert(error.message || 'Failed to connect calendar');
+    }
   };
 
   const handleAddProject = async () => {

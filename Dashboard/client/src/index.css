@@ -3,45 +3,47 @@
 
 @layer base {
   :root {
-    --background: #0b1326;
-    --foreground: #e2e8f0;
-    --card: #162040;
-    --card-foreground: #e2e8f0;
-    --primary: #adc6ff;
-    --primary-foreground: #0b1326;
-    --primary-container: #2a3d6a;
-    --secondary: #c2c6d6;
-    --secondary-foreground: #0b1326;
-    --muted: #1c2a4a;
-    --muted-foreground: #8892a4;
-    --accent: #1c2a4a;
-    --accent-foreground: #e2e8f0;
-    --destructive: #ffb4ab;
-    --destructive-foreground: #0b1326;
-    --border: #243356;
-    --ring: #adc6ff;
-    --success: #22c55e;
-    --warning: #f7be1d;
-    --surface: #0b1326;
-    --surface-container-lowest: #0f1a2e;
-    --surface-container-low: #121f38;
-    --surface-container: #162040;
-    --surface-container-high: #1c2a4a;
-    --surface-container-highest: #243356;
-    --surface-bright: #2a3d6a;
-    --surface-variant: #243356;
-    --outline-variant: #243356;
-    --on-surface: #e2e8f0;
-    --on-surface-variant: #c2c6d6;
-    --on-primary-container: #adc6ff;
-    --tertiary: #f7be1d;
-    --tertiary-container: #3d3000;
-    --on-tertiary: #0b1326;
-    --outline: #8892a4;
-    --inverse-surface: #e2e8f0;
-    --inverse-on-surface: #0b1326;
-    --error: #ffb4ab;
+    --background: #f5f7fb;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --primary: #2f6de2;
+    --primary-foreground: #ffffff;
+    --primary-container: #dbe8ff;
+    --secondary: #e2e8f0;
+    --secondary-foreground: #0f172a;
+    --muted: #eef2f7;
+    --muted-foreground: #64748b;
+    --accent: #eef2f7;
+    --accent-foreground: #0f172a;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #d5deea;
+    --ring: #2f6de2;
+    --success: #16a34a;
+    --warning: #d97706;
+    --surface: #f5f7fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f8fafc;
+    --surface-container: #eef2f7;
+    --surface-container-high: #e2e8f0;
+    --surface-container-highest: #d5deea;
+    --surface-bright: #ffffff;
+    --surface-variant: #e2e8f0;
+    --outline-variant: #d5deea;
+    --on-surface: #0f172a;
+    --on-surface-variant: #475569;
+    --on-primary-container: #1e3a8a;
+    --tertiary: #b45309;
+    --tertiary-container: #fef3c7;
+    --on-tertiary: #1f2937;
+    --outline: #64748b;
+    --inverse-surface: #0b1326;
+    --inverse-on-surface: #e2e8f0;
+    --error: #dc2626;
   }
+
+  .light {}
 
   .dark {
     --background: #0b1326;
@@ -96,44 +98,44 @@
 }
 
 @theme {
-  --color-background: #0b1326;
-  --color-foreground: #e2e8f0;
-  --color-card: #162040;
-  --color-card-foreground: #e2e8f0;
-  --color-primary: #adc6ff;
-  --color-primary-foreground: #0b1326;
-  --color-primary-container: #2a3d6a;
-  --color-on-primary-container: #adc6ff;
-  --color-secondary: #c2c6d6;
-  --color-secondary-foreground: #0b1326;
-  --color-muted: #1c2a4a;
-  --color-muted-foreground: #8892a4;
-  --color-accent: #1c2a4a;
-  --color-accent-foreground: #e2e8f0;
-  --color-destructive: #ffb4ab;
-  --color-destructive-foreground: #0b1326;
-  --color-border: #243356;
-  --color-ring: #adc6ff;
-  --color-success: #22c55e;
-  --color-warning: #f7be1d;
-  --color-surface: #0b1326;
-  --color-surface-container-lowest: #0f1a2e;
-  --color-surface-container-low: #121f38;
-  --color-surface-container: #162040;
-  --color-surface-container-high: #1c2a4a;
-  --color-surface-container-highest: #243356;
-  --color-surface-bright: #2a3d6a;
-  --color-surface-variant: #243356;
-  --color-outline-variant: #243356;
-  --color-on-surface: #e2e8f0;
-  --color-on-surface-variant: #c2c6d6;
-  --color-outline: #8892a4;
-  --color-inverse-surface: #e2e8f0;
-  --color-inverse-on-surface: #0b1326;
-  --color-error: #ffb4ab;
-  --color-tertiary: #f7be1d;
-  --color-tertiary-container: #3d3000;
-  --color-on-tertiary: #0b1326;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-surface: var(--surface);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-variant: var(--surface-variant);
+  --color-outline-variant: var(--outline-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-on-surface: var(--inverse-on-surface);
+  --color-error: var(--error);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary: var(--on-tertiary);
 
   --font-family-headline: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-family-body: 'Inter', system-ui, sans-serif;
@@ -313,9 +315,8 @@ input[type="range"].fixture-neutral-slider:disabled::-moz-range-thumb {
 
 /* ── Global dark theme enforcement ─────────────────────── */
 /* Catch-all for any remaining hardcoded light Tailwind utilities */
-:root {
-  color-scheme: dark;
-}
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
 
 /* Global scrollbar styling matching design */
 * {

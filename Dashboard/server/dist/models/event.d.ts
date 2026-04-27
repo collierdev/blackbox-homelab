@@ -18,6 +18,10 @@ export interface Event {
     updatedAt: string;
     syncAccountId?: string;
     remoteId?: string;
+    recurrenceRule?: string;
+    recurrenceExDates?: string[];
+    recurrenceParentId?: string;
+    recurrenceInstanceStart?: string;
 }
 /**
  * Create a new event
@@ -43,6 +47,10 @@ export declare function updateEvent(id: string, data: Partial<Event>): Promise<E
  * Delete event
  */
 export declare function deleteEvent(id: string): Promise<boolean>;
+/**
+ * Delete all events
+ */
+export declare function deleteAllEvents(): Promise<number>;
 /**
  * Link event to project
  */

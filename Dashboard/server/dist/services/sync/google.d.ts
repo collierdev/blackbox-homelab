@@ -1,11 +1,11 @@
 /**
  * Get authorization URL for Google OAuth
  */
-export declare function getAuthUrl(): string;
+export declare function getAuthUrl(redirectUri: string): Promise<string>;
 /**
  * Exchange authorization code for tokens
  */
-export declare function getTokensFromCode(code: string): Promise<any>;
+export declare function getTokensFromCode(code: string, redirectUri: string): Promise<any>;
 /**
  * Sync events from Google Calendar
  */

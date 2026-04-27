@@ -8,6 +8,7 @@ const STORAGE_KEY = 'pi-dashboard-camera-names';
 
 interface CamerasSectionProps {
   defaultExpanded?: boolean;
+  hiddenCameraIds?: string[];
 }
 
 // Load custom camera names from localStorage
@@ -29,7 +30,7 @@ function saveCameraNames(names: Record<string, string>) {
   }
 }
 
-export function CamerasSection({ defaultExpanded = true }: CamerasSectionProps) {
+export function CamerasSection({ defaultExpanded = true, hiddenCameraIds = [] }: CamerasSectionProps) {
   const [cameras, setCameras] = useState<Go2RTCCamera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,8 @@ export function CamerasSection({ defaultExpanded = true }: CamerasSectionProps) 
       return updated;
     });
   }, []);
+
+  const visibleCameras = cameras.filter((camera) => !hiddenCameraIds.includes(camera.id));
 
   return (
     <div style={{ padding: '0' }}>
@@ -102,14 +105,14 @@ export function CamerasSection({ defaultExpanded = true }: CamerasSectionProps) 
               <p className="text-sm">Failed to load cameras</p>
               <button onClick={fetchCameras} className="mt-2 px-3 py-1 rounded text-sm" style={{ background: '#1c2a4a', color: '#adc6ff' }}>Retry</button>
             </div>
-          ) : cameras.length === 0 ? (
+          ) : visibleCameras.length === 0 ? (
             <div className="text-center py-8" style={{ color: '#8892a4' }}>
               <Camera className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No cameras configured</p>
+              <p className="text-sm">No visible cameras configured</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {cameras.map(camera => (
+              {visibleCameras.map(camera => (
                 <Go2RTCCameraCard
                   key={camera.id}
                   camera={camera}

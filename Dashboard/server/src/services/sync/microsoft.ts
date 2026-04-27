@@ -1,23 +1,38 @@
 import { Client } from '@microsoft/microsoft-graph-client';
-import { getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
+import { getDecryptedAccessToken, getDecryptedRefreshToken, getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
+import { getProviderOAuthConfig } from '../../models/providerConfig';
 import { createEvent, updateEvent, getEventBySyncDetails } from '../../models/event';
 
-const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID || '';
-const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || '';
-const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || 'common';
-const MICROSOFT_REDIRECT_URI = process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:3001/api/sync/microsoft/callback';
+interface MicrosoftOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  tenantId: string;
+}
+
+async function getMicrosoftConfig(): Promise<MicrosoftOAuthConfig> {
+  const cfg = await getProviderOAuthConfig('microsoft');
+  if (!cfg) {
+    throw new Error('Microsoft OAuth is not configured. Configure client ID and secret in Settings > Calendar.');
+  }
+  return {
+    clientId: cfg.clientId,
+    clientSecret: cfg.clientSecret,
+    tenantId: cfg.tenantId || 'common',
+  };
+}
 
 /**
  * Get authorization URL for Microsoft OAuth
  */
-export function getAuthUrl(): string {
+export async function getAuthUrl(redirectUri: string): Promise<string> {
+  const config = await getMicrosoftConfig();
   const scopes = ['Calendars.ReadWrite', 'offline_access'];
   const scopeString = scopes.join(' ');
 
-  return `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize?` +
-    `client_id=${MICROSOFT_CLIENT_ID}` +
+  return `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/authorize?` +
+    `client_id=${config.clientId}` +
     `&response_type=code` +
-    `&redirect_uri=${encodeURIComponent(MICROSOFT_REDIRECT_URI)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scopeString)}` +
     `&response_mode=query`;
 }
@@ -25,14 +40,15 @@ export function getAuthUrl(): string {
 /**
  * Exchange authorization code for tokens
  */
-export async function getTokensFromCode(code: string): Promise<any> {
-  const tokenEndpoint = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/token`;
+export async function getTokensFromCode(code: string, redirectUri: string): Promise<any> {
+  const config = await getMicrosoftConfig();
+  const tokenEndpoint = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`;
 
   const params = new URLSearchParams();
-  params.append('client_id', MICROSOFT_CLIENT_ID);
-  params.append('client_secret', MICROSOFT_CLIENT_SECRET);
+  params.append('client_id', config.clientId);
+  params.append('client_secret', config.clientSecret);
   params.append('code', code);
-  params.append('redirect_uri', MICROSOFT_REDIRECT_URI);
+  params.append('redirect_uri', redirectUri);
   params.append('grant_type', 'authorization_code');
 
   const response = await fetch(tokenEndpoint, {
@@ -53,12 +69,12 @@ export async function getTokensFromCode(code: string): Promise<any> {
 /**
  * Refresh access token
  */
-async function refreshAccessToken(refreshToken: string): Promise<any> {
-  const tokenEndpoint = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/token`;
+async function refreshAccessToken(refreshToken: string, config: MicrosoftOAuthConfig): Promise<any> {
+  const tokenEndpoint = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`;
 
   const params = new URLSearchParams();
-  params.append('client_id', MICROSOFT_CLIENT_ID);
-  params.append('client_secret', MICROSOFT_CLIENT_SECRET);
+  params.append('client_id', config.clientId);
+  params.append('client_secret', config.clientSecret);
   params.append('refresh_token', refreshToken);
   params.append('grant_type', 'refresh_token');
 
@@ -93,6 +109,7 @@ function createGraphClient(accessToken: string): Client {
  */
 export async function syncMicrosoftCalendar(syncAccountId: string): Promise<void> {
   try {
+    const oauthConfig = await getMicrosoftConfig();
     let syncAccount = await getSyncAccount(syncAccountId);
     if (!syncAccount) {
       throw new Error('Sync account not found');
@@ -100,10 +117,11 @@ export async function syncMicrosoftCalendar(syncAccountId: string): Promise<void
 
     // Refresh token if needed
     if (syncAccount.expiresAt && new Date(syncAccount.expiresAt) < new Date()) {
-      if (!syncAccount.refreshToken) {
+      const refreshToken = getDecryptedRefreshToken(syncAccount);
+      if (!refreshToken) {
         throw new Error('No refresh token available');
       }
-      const tokens = await refreshAccessToken(syncAccount.refreshToken);
+      const tokens = await refreshAccessToken(refreshToken, oauthConfig);
       await updateSyncAccount(syncAccountId, {
         accessToken: tokens.access_token,
         expiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
@@ -111,7 +129,7 @@ export async function syncMicrosoftCalendar(syncAccountId: string): Promise<void
       syncAccount = await getSyncAccount(syncAccountId);
     }
 
-    const client = createGraphClient(syncAccount!.accessToken);
+    const client = createGraphClient(getDecryptedAccessToken(syncAccount!));
 
     // Fetch events from the last 30 days and next 90 days
     const startDateTime = new Date();
@@ -208,7 +226,7 @@ export async function pushEventToMicrosoft(
     throw new Error('Sync account not found');
   }
 
-  const client = createGraphClient(syncAccount.accessToken);
+  const client = createGraphClient(getDecryptedAccessToken(syncAccount));
 
   const msEvent = {
     subject: eventData.title,
@@ -249,7 +267,7 @@ export async function deleteEventFromMicrosoft(
     throw new Error('Sync account not found');
   }
 
-  const client = createGraphClient(syncAccount.accessToken);
+  const client = createGraphClient(getDecryptedAccessToken(syncAccount));
 
   await client
     .api(`/me/calendar/events/${remoteId}`)

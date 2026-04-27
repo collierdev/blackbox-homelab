@@ -1,21 +1,31 @@
 import { google } from 'googleapis';
-import { getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
+import { getDecryptedAccessToken, getDecryptedRefreshToken, getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
+import { getProviderOAuthConfig } from '../../models/providerConfig';
 import { createEvent, updateEvent, getEventBySyncDetails } from '../../models/event';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/sync/google/callback';
+interface GoogleOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+}
 
-const oauth2Client = new google.auth.OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REDIRECT_URI
-);
+async function getGoogleConfig(): Promise<GoogleOAuthConfig> {
+  const cfg = await getProviderOAuthConfig('google');
+  if (!cfg) {
+    throw new Error('Google OAuth is not configured. Configure client ID and secret in Settings > Calendar.');
+  }
+  return { clientId: cfg.clientId, clientSecret: cfg.clientSecret };
+}
+
+function buildOAuthClient(config: GoogleOAuthConfig, redirectUri: string): any {
+  return new google.auth.OAuth2(config.clientId, config.clientSecret, redirectUri);
+}
 
 /**
  * Get authorization URL for Google OAuth
  */
-export function getAuthUrl(): string {
+export async function getAuthUrl(redirectUri: string): Promise<string> {
+  const config = await getGoogleConfig();
+  const oauth2Client = buildOAuthClient(config, redirectUri);
   const scopes = [
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events',
@@ -31,7 +41,9 @@ export function getAuthUrl(): string {
 /**
  * Exchange authorization code for tokens
  */
-export async function getTokensFromCode(code: string): Promise<any> {
+export async function getTokensFromCode(code: string, redirectUri: string): Promise<any> {
+  const config = await getGoogleConfig();
+  const oauth2Client = buildOAuthClient(config, redirectUri);
   const { tokens } = await oauth2Client.getToken(code);
   return tokens;
 }
@@ -41,15 +53,19 @@ export async function getTokensFromCode(code: string): Promise<any> {
  */
 export async function syncGoogleCalendar(syncAccountId: string): Promise<void> {
   try {
+    const config = await getGoogleConfig();
+    const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
     const syncAccount = await getSyncAccount(syncAccountId);
     if (!syncAccount) {
       throw new Error('Sync account not found');
     }
+    const accessToken = getDecryptedAccessToken(syncAccount);
+    const refreshToken = getDecryptedRefreshToken(syncAccount);
 
     // Set credentials
     oauth2Client.setCredentials({
-      access_token: syncAccount.accessToken,
-      refresh_token: syncAccount.refreshToken,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -150,14 +166,18 @@ export async function pushEventToGoogle(
   syncAccountId: string,
   eventData: any
 ): Promise<string> {
+  const config = await getGoogleConfig();
+  const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
   const syncAccount = await getSyncAccount(syncAccountId);
   if (!syncAccount) {
     throw new Error('Sync account not found');
   }
+  const accessToken = getDecryptedAccessToken(syncAccount);
+  const refreshToken = getDecryptedRefreshToken(syncAccount);
 
   oauth2Client.setCredentials({
-    access_token: syncAccount.accessToken,
-    refresh_token: syncAccount.refreshToken,
+    access_token: accessToken,
+    refresh_token: refreshToken,
   });
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -189,14 +209,18 @@ export async function deleteEventFromGoogle(
   syncAccountId: string,
   remoteId: string
 ): Promise<void> {
+  const config = await getGoogleConfig();
+  const oauth2Client = buildOAuthClient(config, process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/sync/google/callback');
   const syncAccount = await getSyncAccount(syncAccountId);
   if (!syncAccount) {
     throw new Error('Sync account not found');
   }
+  const accessToken = getDecryptedAccessToken(syncAccount);
+  const refreshToken = getDecryptedRefreshToken(syncAccount);
 
   oauth2Client.setCredentials({
-    access_token: syncAccount.accessToken,
-    refresh_token: syncAccount.refreshToken,
+    access_token: accessToken,
+    refresh_token: refreshToken,
   });
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });

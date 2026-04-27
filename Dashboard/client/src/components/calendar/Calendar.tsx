@@ -9,6 +9,9 @@ import CircularView from './CircularView';
 import EventModal from './EventModal';
 import EventForm from './EventForm';
 import { useSocket } from '../../hooks/useSocket';
+import type { Event } from '../../types';
+
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 
 interface CalendarProps {
   newEventRequest?: number;
@@ -22,12 +25,14 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
     updateEvent,
     deleteEvent,
     completeEvent,
+    createProject,
   } = useSocket();
   const [currentView, setCurrentView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [detachedEditingEvent, setDetachedEditingEvent] = useState<Event | null>(null);
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string | null>(null);
 
   // Fire new-event form when parent requests it
@@ -36,7 +41,13 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
   }, [newEventRequest]); // eslint-disable-line
 
   const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) : null;
-  const editingEvent = editingEventId ? events.find(e => e.id === editingEventId) : null;
+  const editingEvent = editingEventId
+    ? (events.find(e => e.id === editingEventId) || detachedEditingEvent)
+    : null;
+  const normalizeEventIdForCrud = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    return event?.recurrenceParentId || eventId;
+  };
 
   const filteredEvents = selectedProjectFilter
     ? events.filter(e => e.projectId === selectedProjectFilter)
@@ -101,9 +112,34 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
 
   const handleNewEvent = (date?: Date) => {
     setEditingEventId(null);
+    setDetachedEditingEvent(null);
     setIsEventFormOpen(true);
     if (date) {
       // Set initial date for new event
+    }
+  };
+
+  const handleStartEditEvent = async (eventId: string, fallbackEvent?: Event) => {
+    const normalizedId = normalizeEventIdForCrud(eventId);
+    const existing = events.find((e) => e.id === normalizedId);
+
+    setEditingEventId(normalizedId);
+    setDetachedEditingEvent(null);
+    setIsEventFormOpen(true);
+
+    if (existing) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/calendar/events/${normalizedId}`);
+      if (!res.ok) {
+        // Use clicked event as a fallback so edit form still opens populated.
+        if (fallbackEvent) setDetachedEditingEvent({ ...fallbackEvent, id: normalizedId });
+        return;
+      }
+      const fetched = await res.json();
+      setDetachedEditingEvent(fetched);
+    } catch {
+      if (fallbackEvent) setDetachedEditingEvent({ ...fallbackEvent, id: normalizedId });
     }
   };
 
@@ -114,6 +150,7 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
   const handleCloseEventForm = () => {
     setIsEventFormOpen(false);
     setEditingEventId(null);
+    setDetachedEditingEvent(null);
   };
 
   const handleSaveEvent = async (eventData: any) => {
@@ -197,13 +234,12 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
           event={selectedEvent}
           projects={projects}
           onClose={handleCloseEventModal}
-          onEdit={() => {
+          onEdit={async () => {
             handleCloseEventModal();
-            setEditingEventId(selectedEvent.id);
-            setIsEventFormOpen(true);
+            await handleStartEditEvent(selectedEvent.id, selectedEvent);
           }}
-          onDelete={() => handleDeleteEvent(selectedEvent.id)}
-          onComplete={() => handleCompleteEvent(selectedEvent.id)}
+          onDelete={() => handleDeleteEvent(normalizeEventIdForCrud(selectedEvent.id))}
+          onComplete={() => handleCompleteEvent(normalizeEventIdForCrud(selectedEvent.id))}
         />
       )}
 
@@ -213,6 +249,7 @@ export default function Calendar({ newEventRequest }: CalendarProps) {
           projects={projects}
           onClose={handleCloseEventForm}
           onSave={handleSaveEvent}
+          onCreateProject={createProject}
         />
       )}
 

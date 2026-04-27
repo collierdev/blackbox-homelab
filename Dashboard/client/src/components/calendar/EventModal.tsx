@@ -133,6 +133,11 @@ export default function EventModal({
               Synced from external calendar
             </div>
           )}
+          {event.recurrenceRule && (
+            <div className="text-xs mb-4" style={{ color: '#8892a4' }}>
+              Recurring event
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-4" style={{ borderTop: '1px solid #243356' }}>

@@ -20,9 +20,11 @@ export interface SyncAccount {
 export declare function createSyncAccount(data: {
     provider: 'google' | 'microsoft' | 'caldav';
     email: string;
+    accountIdentifier?: string;
     accessToken: string;
     refreshToken?: string;
     tokenExpiry?: string;
+    expiresAt?: string;
 }): Promise<SyncAccount>;
 /**
  * Get sync account by ID

@@ -8,6 +8,7 @@ interface SystemStatsProps {
   stats: Stats | null;
   haDevices?: HADevices | null;
   haStatus?: HAStatus;
+  hiddenCameraIds?: string[];
 }
 
 function formatBytes(bytes: number): string {
@@ -27,7 +28,7 @@ function formatUptimeStr(seconds: number): string {
   return `${mins}m`;
 }
 
-export function SystemStats({ stats, haDevices, haStatus }: SystemStatsProps) {
+export function SystemStats({ stats, haDevices, haStatus, hiddenCameraIds = [] }: SystemStatsProps) {
   if (!stats) {
     return (
       <div className="h-full overflow-y-auto" style={{ padding: '28px 32px' }}>
@@ -132,7 +133,7 @@ export function SystemStats({ stats, haDevices, haStatus }: SystemStatsProps) {
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
           <Services />
-          <CamerasSection defaultExpanded={true} />
+          <CamerasSection defaultExpanded={true} hiddenCameraIds={hiddenCameraIds} />
         </div>
 
         {/* Right column */}

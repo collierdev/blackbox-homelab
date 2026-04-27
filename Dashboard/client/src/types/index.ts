@@ -244,6 +244,10 @@ export interface Event {
   updatedAt: string;
   syncAccountId?: string;
   remoteId?: string;
+  recurrenceRule?: string;
+  recurrenceExDates?: string[];
+  recurrenceParentId?: string;
+  recurrenceInstanceStart?: string;
 }
 
 export interface Task {
@@ -281,7 +285,7 @@ export interface SyncAccount {
   provider: 'google' | 'microsoft' | 'caldav';
   email: string;
   lastSync?: string;
-  status: 'connected' | 'error' | 'syncing';
+  status: 'connected' | 'error' | 'syncing' | 'active';
   errorMessage?: string;
   createdAt: string;
 }

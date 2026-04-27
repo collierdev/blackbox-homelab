@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ const eventSchema = z.object({
   projectId: z.string().nullable(),
   isAllDay: z.boolean(),
   reminders: z.array(z.number()).optional(),
+  recurrenceRule: z.string().optional(),
 }).refine(data => {
   return new Date(data.startDateTime) < new Date(data.endDateTime);
 }, {
@@ -30,15 +31,17 @@ interface EventFormProps {
   projects: Project[];
   onClose: () => void;
   onSave: (data: Partial<Event>) => void;
+  onCreateProject?: (name: string, color?: string) => Promise<Project | null>;
 }
 
-export default function EventForm({ event, projects, onClose, onSave }: EventFormProps) {
+export default function EventForm({ event, projects, onClose, onSave, onCreateProject }: EventFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: event ? {
@@ -64,7 +67,46 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
     },
   });
 
+  useEffect(() => {
+    if (!event) {
+      reset({
+        title: '',
+        startDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        endDateTime: format(new Date(Date.now() + 3600000), "yyyy-MM-dd'T'HH:mm"),
+        location: '',
+        description: '',
+        color: '#3b82f6',
+        projectId: null,
+        isAllDay: false,
+        reminders: [],
+        recurrenceRule: '',
+      });
+      return;
+    }
+
+    reset({
+      title: event.title,
+      startDateTime: format(new Date(event.startDateTime), "yyyy-MM-dd'T'HH:mm"),
+      endDateTime: format(new Date(event.endDateTime), "yyyy-MM-dd'T'HH:mm"),
+      location: event.location || '',
+      description: event.description || '',
+      color: event.color || '#3b82f6',
+      projectId: event.projectId || null,
+      isAllDay: event.isAllDay || false,
+      reminders: event.reminders || [],
+      recurrenceRule: event.recurrenceRule || '',
+    });
+  }, [event, reset]);
+
   const isAllDay = watch('isAllDay');
+  const [repeatType, setRepeatType] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'>('none');
+  const [repeatInterval, setRepeatInterval] = useState(1);
+  const [repeatEnds, setRepeatEnds] = useState<'never' | 'on'>('never');
+  const [repeatUntil, setRepeatUntil] = useState('');
+  const [customRRule, setCustomRRule] = useState('');
+  const [recurrenceDirty, setRecurrenceDirty] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   useEffect(() => {
     if (isAllDay) {
@@ -74,11 +116,111 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
     }
   }, [isAllDay, watch, setValue]);
 
+  useEffect(() => {
+    const existingRule = event?.recurrenceRule;
+    setRecurrenceDirty(false);
+    if (!existingRule) {
+      setRepeatType('none');
+      setRepeatInterval(1);
+      setRepeatEnds('never');
+      setRepeatUntil('');
+      setCustomRRule('');
+      return;
+    }
+
+    const parts = existingRule.split(';').filter(Boolean);
+    const map: Record<string, string> = {};
+    for (const part of parts) {
+      const [k, v] = part.split('=');
+      if (k && v) map[k.toUpperCase()] = v;
+    }
+
+    const freq = (map.FREQ || '').toUpperCase();
+    if (freq === 'DAILY') setRepeatType('daily');
+    else if (freq === 'WEEKLY') setRepeatType('weekly');
+    else if (freq === 'MONTHLY') setRepeatType('monthly');
+    else if (freq === 'YEARLY') setRepeatType('yearly');
+    else setRepeatType('custom');
+
+    setRepeatInterval(Number(map.INTERVAL || 1) || 1);
+    if (map.UNTIL) {
+      setRepeatEnds('on');
+      const until = map.UNTIL.endsWith('Z') ? map.UNTIL.slice(0, -1) : map.UNTIL;
+      if (until.length >= 8) {
+        const y = until.slice(0, 4);
+        const m = until.slice(4, 6);
+        const d = until.slice(6, 8);
+        setRepeatUntil(`${y}-${m}-${d}`);
+      }
+    } else {
+      setRepeatEnds('never');
+      setRepeatUntil('');
+    }
+    setCustomRRule(existingRule);
+  }, [event?.recurrenceRule]);
+
+  useEffect(() => {
+    if (!recurrenceDirty) return;
+    if (repeatType === 'none') {
+      setValue('recurrenceRule', '');
+      return;
+    }
+    if (repeatType === 'custom') {
+      setValue('recurrenceRule', customRRule.trim());
+      return;
+    }
+
+    const freqMap: Record<string, string> = {
+      daily: 'DAILY',
+      weekly: 'WEEKLY',
+      monthly: 'MONTHLY',
+      yearly: 'YEARLY',
+    };
+    const parts = [`FREQ=${freqMap[repeatType]}`, `INTERVAL=${Math.max(1, repeatInterval)}`];
+    if (repeatEnds === 'on' && repeatUntil) {
+      const normalized = repeatUntil.replace(/-/g, '');
+      parts.push(`UNTIL=${normalized}T235959Z`);
+    }
+    setValue('recurrenceRule', parts.join(';'));
+  }, [repeatType, repeatInterval, repeatEnds, repeatUntil, customRRule, recurrenceDirty, setValue]);
+
+  const normalizeDateTimeForSave = (value: string, allDay: boolean): string => {
+    if (!value) return value;
+    if (allDay) return value;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toISOString();
+  };
+
   const onSubmit = (data: EventFormData) => {
+    const nextRecurrenceRule = recurrenceDirty
+      ? (data.recurrenceRule || undefined)
+      : (event?.recurrenceRule || undefined);
+
     onSave({
       ...data,
+      startDateTime: normalizeDateTimeForSave(data.startDateTime, data.isAllDay),
+      endDateTime: normalizeDateTimeForSave(data.endDateTime, data.isAllDay),
       projectId: data.projectId || undefined,
+      recurrenceRule: nextRecurrenceRule,
     });
+  };
+
+  const handleCreateProjectInline = async () => {
+    const name = newProjectName.trim();
+    if (!name || !onCreateProject || isCreatingProject) return;
+    setIsCreatingProject(true);
+    try {
+      const created = await onCreateProject(name, '#3B82F6');
+      if (!created) {
+        alert('Failed to create project');
+        return;
+      }
+      setValue('projectId', created.id);
+      setNewProjectName('');
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   const colorOptions = [
@@ -133,6 +275,7 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          <input type="hidden" {...register('recurrenceRule')} />
           {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-1" style={labelStyle}>
@@ -197,6 +340,88 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
             </div>
           </div>
 
+          {/* Recurrence */}
+          <div>
+            <label className="block text-sm font-medium mb-1" style={labelStyle}>
+              Repeat
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={repeatType}
+                onChange={(e) => {
+                  setRecurrenceDirty(true);
+                  setRepeatType(e.target.value as 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom');
+                }}
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+                <option value="custom">Custom RRULE</option>
+              </select>
+              {repeatType !== 'none' && repeatType !== 'custom' && (
+                <input
+                  type="number"
+                  min={1}
+                  value={repeatInterval}
+                  onChange={(e) => {
+                    setRecurrenceDirty(true);
+                    setRepeatInterval(Math.max(1, Number(e.target.value) || 1));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                  placeholder="Every N"
+                />
+              )}
+            </div>
+
+            {repeatType !== 'none' && repeatType !== 'custom' && (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <select
+                  value={repeatEnds}
+                  onChange={(e) => {
+                    setRecurrenceDirty(true);
+                    setRepeatEnds(e.target.value as 'never' | 'on');
+                  }}
+                  className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                >
+                  <option value="never">Ends: Never</option>
+                  <option value="on">Ends: On date</option>
+                </select>
+                {repeatEnds === 'on' && (
+                  <input
+                    type="date"
+                    value={repeatUntil}
+                    onChange={(e) => {
+                      setRecurrenceDirty(true);
+                      setRepeatUntil(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={inputStyle}
+                  />
+                )}
+              </div>
+            )}
+
+            {repeatType === 'custom' && (
+              <textarea
+                value={customRRule}
+                onChange={(e) => {
+                  setRecurrenceDirty(true);
+                  setCustomRRule(e.target.value);
+                }}
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mt-2"
+                style={inputStyle}
+                placeholder="FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR"
+              />
+            )}
+          </div>
+
           {/* Location */}
           <div>
             <label className="block text-sm font-medium mb-1" style={labelStyle}>
@@ -230,18 +455,45 @@ export default function EventForm({ event, projects, onClose, onSave }: EventFor
             <label className="block text-sm font-medium mb-1" style={labelStyle}>
               Project
             </label>
-            <select
-              {...register('projectId')}
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={inputStyle}
-            >
-              <option value="">No project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              <select
+                {...register('projectId')}
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+              >
+                <option value="">No project</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateProjectInline(); } }}
+                  placeholder="Create new project..."
+                  className="flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCreateProjectInline()}
+                  disabled={!newProjectName.trim() || isCreatingProject || !onCreateProject}
+                  className="px-3 py-2 rounded-lg transition-colors"
+                  style={{
+                    background: '#adc6ff',
+                    color: '#0b1326',
+                    cursor: !newProjectName.trim() || isCreatingProject || !onCreateProject ? 'not-allowed' : 'pointer',
+                    opacity: !newProjectName.trim() || isCreatingProject || !onCreateProject ? 0.6 : 1,
+                  }}
+                >
+                  {isCreatingProject ? 'Creating...' : 'Add'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Color */}

@@ -6,6 +6,7 @@ exports.getEventsByDateRange = getEventsByDateRange;
 exports.getAllEvents = getAllEvents;
 exports.updateEvent = updateEvent;
 exports.deleteEvent = deleteEvent;
+exports.deleteAllEvents = deleteAllEvents;
 exports.linkEventToProject = linkEventToProject;
 exports.completeEvent = completeEvent;
 exports.getEventsByProject = getEventsByProject;
@@ -13,6 +14,7 @@ exports.getEventsBySyncAccount = getEventsBySyncAccount;
 exports.getEventBySyncDetails = getEventBySyncDetails;
 const uuid_1 = require("uuid");
 const neo4j_1 = require("../config/neo4j");
+const rrule_1 = require("rrule");
 /**
  * Create a new event
  */
@@ -40,6 +42,8 @@ async function createEvent(data) {
         taskIds: $taskIds,
         syncAccountId: $syncAccountId,
         remoteId: $remoteId,
+        recurrenceRule: $recurrenceRule,
+        recurrenceExDates: $recurrenceExDates,
         createdAt: datetime($createdAt),
         updatedAt: datetime($updatedAt)
       })
@@ -62,6 +66,8 @@ async function createEvent(data) {
             taskIds: data.taskIds || [],
             syncAccountId: data.syncAccountId || null,
             remoteId: data.remoteId || null,
+            recurrenceRule: data.recurrenceRule || null,
+            recurrenceExDates: data.recurrenceExDates || [],
             createdAt: now,
             updatedAt: now,
         });
@@ -110,13 +116,13 @@ async function getEventsByDateRange(startDate, endDate) {
     try {
         const result = await session.run(`
       MATCH (e:Event)
-      WHERE e.startDateTime >= datetime($startDate)
-        AND e.startDateTime <= datetime($endDate)
+      WHERE (e.startDateTime >= datetime($startDate) AND e.startDateTime <= datetime($endDate))
+         OR e.recurrenceRule IS NOT NULL
       OPTIONAL MATCH (e)-[:BELONGS_TO]->(p:Project)
       RETURN e, p.id as projectId
       ORDER BY e.startDateTime ASC
       `, { startDate, endDate });
-        return result.records.map((record) => {
+        const baseEvents = result.records.map((record) => {
             const event = record.get('e').properties;
             const projectId = record.get('projectId');
             if (projectId) {
@@ -124,6 +130,7 @@ async function getEventsByDateRange(startDate, endDate) {
             }
             return convertNeo4jEvent(event);
         });
+        return expandRecurringEvents(baseEvents, startDate, endDate);
     }
     finally {
         await session.close();
@@ -205,6 +212,14 @@ async function updateEvent(id, data) {
             setFields.push('e.isAllDay = $isAllDay');
             params.isAllDay = data.isAllDay;
         }
+        if (data.recurrenceRule !== undefined) {
+            setFields.push('e.recurrenceRule = $recurrenceRule');
+            params.recurrenceRule = data.recurrenceRule;
+        }
+        if (data.recurrenceExDates !== undefined) {
+            setFields.push('e.recurrenceExDates = $recurrenceExDates');
+            params.recurrenceExDates = data.recurrenceExDates;
+        }
         setFields.push('e.updatedAt = datetime($updatedAt)');
         const result = await session.run(`
       MATCH (e:Event {id: $id})
@@ -237,6 +252,27 @@ async function deleteEvent(id) {
       RETURN count(e) as deleted
       `, { id });
         return result.records[0].get('deleted').toNumber() > 0;
+    }
+    finally {
+        await session.close();
+    }
+}
+/**
+ * Delete all events
+ */
+async function deleteAllEvents() {
+    const session = (0, neo4j_1.getSession)();
+    try {
+        const countResult = await session.run(`
+      MATCH (e:Event)
+      RETURN count(e) as total
+      `);
+        const total = countResult.records[0]?.get('total');
+        await session.run(`
+      MATCH (e:Event)
+      DETACH DELETE e
+      `);
+        return typeof total?.toNumber === 'function' ? total.toNumber() : (total?.low ?? 0);
     }
     finally {
         await session.close();
@@ -343,6 +379,44 @@ function convertNeo4jEvent(event) {
         endDateTime: event.endDateTime?.toString() || event.endDateTime,
         createdAt: event.createdAt?.toString() || event.createdAt,
         updatedAt: event.updatedAt?.toString() || event.updatedAt,
+        recurrenceExDates: event.recurrenceExDates || [],
     };
+}
+function expandRecurringEvents(events, rangeStartIso, rangeEndIso) {
+    const expanded = [];
+    const rangeStart = new Date(rangeStartIso);
+    const rangeEnd = new Date(rangeEndIso);
+    for (const event of events) {
+        if (!event.recurrenceRule) {
+            expanded.push(event);
+            continue;
+        }
+        try {
+            const start = new Date(event.startDateTime);
+            const end = new Date(event.endDateTime);
+            const durationMs = end.getTime() - start.getTime();
+            const rule = (0, rrule_1.rrulestr)(event.recurrenceRule, { dtstart: start });
+            const occurrences = rule.between(rangeStart, rangeEnd, true);
+            const exDateSet = new Set((event.recurrenceExDates || []).map((d) => new Date(d).toISOString()));
+            for (const occurrenceStart of occurrences) {
+                if (exDateSet.has(occurrenceStart.toISOString()))
+                    continue;
+                const instanceStart = occurrenceStart.toISOString();
+                const instanceEnd = new Date(occurrenceStart.getTime() + durationMs).toISOString();
+                expanded.push({
+                    ...event,
+                    id: `${event.id}::${instanceStart}`,
+                    startDateTime: instanceStart,
+                    endDateTime: instanceEnd,
+                    recurrenceParentId: event.id,
+                    recurrenceInstanceStart: instanceStart,
+                });
+            }
+        }
+        catch {
+            expanded.push(event);
+        }
+    }
+    return expanded.sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
 }
 //# sourceMappingURL=event.js.map

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Home, Lightbulb, Thermometer, Music, Power, Wifi, WifiOff, Layers, Plus, Camera } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Home, Lightbulb, Thermometer, Music, Power, Wifi, WifiOff, Layers, Plus, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ClimateCard } from './homeassistant/ClimateCard';
 import { MediaPlayerCard } from './homeassistant/MediaPlayerCard';
 import { FixtureCard } from './homeassistant/FixtureCard';
@@ -11,6 +11,9 @@ interface HomeAssistantProps {
   devices: HADevices | null;
   status: HAStatus;
   collapsed?: boolean;
+  hiddenSections?: string[];
+  hiddenLights?: string[];
+  hiddenCameras?: string[];
   onToggle: (entityId: string) => Promise<boolean>;
   onLightBrightness: (entityId: string, brightness: number) => Promise<boolean>;
   onLightColor?: (entityId: string, rgb: [number, number, number]) => Promise<boolean>;
@@ -49,6 +52,9 @@ export function HomeAssistant({
   devices,
   status,
   collapsed = false,
+  hiddenSections = [],
+  hiddenLights = [],
+  hiddenCameras = [],
   onToggle,
   onLightBrightness: _onLightBrightness,
   onLightColor: _onLightColor,
@@ -66,9 +72,17 @@ export function HomeAssistant({
 }: HomeAssistantProps) {
   const [fixtureModalOpen, setFixtureModalOpen] = useState(false);
   const [editingFixture, setEditingFixture] = useState<LightFixture | null>(null);
+  const fixtureScrollRef = useRef<HTMLDivElement>(null);
+  const lightsScrollRef = useRef<HTMLDivElement>(null);
+  const [canFixtureScrollLeft, setCanFixtureScrollLeft] = useState(false);
+  const [canFixtureScrollRight, setCanFixtureScrollRight] = useState(false);
+  const [canLightsScrollUp, setCanLightsScrollUp] = useState(false);
+  const [canLightsScrollDown, setCanLightsScrollDown] = useState(false);
+  const isSectionVisible = (sectionId: string) => !hiddenSections.includes(sectionId);
+  const visibleLights = devices?.lights.filter((l) => !hiddenLights.includes(l.entity_id)) || [];
 
   // Count devices that are "on" or active
-  const lightsOn = devices?.lights.filter(l => l.state === 'on').length || 0;
+  const lightsOn = visibleLights.filter(l => l.state === 'on').length || 0;
   const switchesOn = devices?.switches.filter(s => s.state === 'on').length || 0;
   const climateActive = devices?.climate.filter(c => c.state !== 'off').length || 0;
 
@@ -106,6 +120,50 @@ export function HomeAssistant({
       return result;
     }
     return null;
+  };
+
+  const checkFixtureScroll = useCallback(() => {
+    const el = fixtureScrollRef.current;
+    if (!el) return;
+    setCanFixtureScrollLeft(el.scrollLeft > 2);
+    setCanFixtureScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = fixtureScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkFixtureScroll, { passive: true });
+    const t = setTimeout(checkFixtureScroll, 120);
+    return () => {
+      el.removeEventListener('scroll', checkFixtureScroll);
+      clearTimeout(t);
+    };
+  }, [checkFixtureScroll, fixtures.length]);
+
+  const nudgeFixtureRow = (dir: 'left' | 'right') => {
+    fixtureScrollRef.current?.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
+  };
+
+  const checkLightsScroll = useCallback(() => {
+    const el = lightsScrollRef.current;
+    if (!el) return;
+    setCanLightsScrollUp(el.scrollTop > 2);
+    setCanLightsScrollDown(el.scrollTop < el.scrollHeight - el.clientHeight - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = lightsScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkLightsScroll, { passive: true });
+    const t = setTimeout(checkLightsScroll, 120);
+    return () => {
+      el.removeEventListener('scroll', checkLightsScroll);
+      clearTimeout(t);
+    };
+  }, [checkLightsScroll, visibleLights.length]);
+
+  const nudgeLightsColumn = (dir: 'up' | 'down') => {
+    lightsScrollRef.current?.scrollBy({ top: dir === 'up' ? -140 : 140, behavior: 'smooth' });
   };
 
   // Collapsed view - just show summary
@@ -149,7 +207,7 @@ export function HomeAssistant({
               <Lightbulb className={`w-5 h-5 ${lightsOn > 0 ? 'text-tertiary' : 'text-on-surface-variant'}`} />
               <div>
                 <p className="text-[10px] text-on-surface-variant uppercase font-['Inter']">Lights</p>
-                <p className="text-lg font-bold text-on-surface">{lightsOn}/{devices.lights.length}</p>
+                <p className="text-lg font-bold text-on-surface">{lightsOn}/{visibleLights.length}</p>
               </div>
             </div>
             <div className="bg-surface-container-high p-3 rounded-lg flex items-center gap-3">
@@ -214,7 +272,7 @@ export function HomeAssistant({
   return (
     <div>
       {/* Light Fixtures (grouped) */}
-      {(fixtures.length > 0 || onFixtureCreate) && (
+      {isSectionVisible('fixtures') && (fixtures.length > 0 || onFixtureCreate) && (
         <div style={{ marginBottom: 24 }}>
           <SectionHeader
             icon={<Layers style={{ width: 16, height: 16, color: '#adc6ff' }} />}
@@ -235,39 +293,123 @@ export function HomeAssistant({
               No fixtures yet. Click Add to group lights.
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              {fixtures.map(fixture => (
-                <FixtureCard
-                  key={fixture.id}
-                  fixture={fixture}
-                  lights={devices.lights}
-                  onToggle={onFixtureToggle || (async () => false)}
-                  onBrightness={onFixtureBrightness || (async () => false)}
-                  onColorChange={onFixtureColor || (async () => false)}
-                  onEdit={onFixtureUpdate ? handleEditFixture : undefined}
-                  onDelete={onFixtureDelete}
-                />
-              ))}
+            <div className="relative group/fixtures">
+              {canFixtureScrollLeft && (
+                <button
+                  onClick={() => nudgeFixtureRow('left')}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full opacity-0 group-hover/fixtures:opacity-100 transition-all duration-150"
+                  style={{ width: 34, height: 34, background: '#243356cc', color: '#adc6ff', border: '1px solid #2a3d6a' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#2e436f'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#243356cc'; }}
+                  title="Scroll left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              {canFixtureScrollRight && (
+                <button
+                  onClick={() => nudgeFixtureRow('right')}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full opacity-0 group-hover/fixtures:opacity-100 transition-all duration-150"
+                  style={{ width: 34, height: 34, background: '#243356cc', color: '#adc6ff', border: '1px solid #2a3d6a' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#2e436f'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#243356cc'; }}
+                  title="Scroll right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+              <div
+                ref={fixtureScrollRef}
+                className="no-scrollbar"
+                style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6, cursor: 'grab' }}
+                onMouseDown={e => {
+                  const el = e.currentTarget;
+                  el.style.cursor = 'grabbing';
+                  const startX = e.pageX - el.offsetLeft;
+                  const startScroll = el.scrollLeft;
+                  const onMove = (ev: MouseEvent) => { el.scrollLeft = startScroll - (ev.pageX - el.offsetLeft - startX); };
+                  const onUp = () => {
+                    el.style.cursor = 'grab';
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                  };
+                  window.addEventListener('mousemove', onMove);
+                  window.addEventListener('mouseup', onUp);
+                }}
+              >
+                {fixtures.map(fixture => (
+                  <div key={fixture.id} style={{ minWidth: 320, flexShrink: 0 }}>
+                    <FixtureCard
+                      fixture={fixture}
+                      lights={devices.lights}
+                      onToggle={onFixtureToggle || (async () => false)}
+                      onBrightness={onFixtureBrightness || (async () => false)}
+                      onColorChange={onFixtureColor || (async () => false)}
+                      onEdit={onFixtureUpdate ? handleEditFixture : undefined}
+                      onDelete={onFixtureDelete}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       )}
 
       {/* Smart Lights + Switches — 2-col side-by-side */}
-      {(devices.lights.length > 0 || devices.switches.length > 0) && (
+      {(isSectionVisible('lights') || isSectionVisible('switches')) && (visibleLights.length > 0 || devices.switches.length > 0) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-          {devices.lights.length > 0 && (
+          {isSectionVisible('lights') && visibleLights.length > 0 && (
             <div>
               <SectionHeader
                 icon={<Lightbulb style={{ width: 16, height: 16, color: '#adc6ff' }} />}
                 label="Smart Lights"
               />
-              <div style={{ background: '#162040', borderRadius: 12, padding: '0 20px', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#243356 transparent' }}>
-                {devices.lights.map((light, i) => {
+              <div className="relative group/lights">
+                {canLightsScrollUp && (
+                  <button
+                    onClick={() => nudgeLightsColumn('up')}
+                    className="absolute right-2 top-2 z-10 flex items-center justify-center rounded-full opacity-0 group-hover/lights:opacity-100 transition-all duration-150"
+                    style={{ width: 28, height: 28, background: '#243356cc', color: '#adc6ff', border: '1px solid #2a3d6a' }}
+                    title="Scroll up"
+                  >
+                    <ChevronLeft className="w-4 h-4" style={{ transform: 'rotate(90deg)' }} />
+                  </button>
+                )}
+                {canLightsScrollDown && (
+                  <button
+                    onClick={() => nudgeLightsColumn('down')}
+                    className="absolute right-2 bottom-2 z-10 flex items-center justify-center rounded-full opacity-0 group-hover/lights:opacity-100 transition-all duration-150"
+                    style={{ width: 28, height: 28, background: '#243356cc', color: '#adc6ff', border: '1px solid #2a3d6a' }}
+                    title="Scroll down"
+                  >
+                    <ChevronRight className="w-4 h-4" style={{ transform: 'rotate(90deg)' }} />
+                  </button>
+                )}
+                <div
+                  ref={lightsScrollRef}
+                  className="no-scrollbar"
+                  style={{ background: '#162040', borderRadius: 12, padding: '0 20px', maxHeight: 220, overflowY: 'auto', cursor: 'grab' }}
+                  onMouseDown={e => {
+                    const el = e.currentTarget;
+                    el.style.cursor = 'grabbing';
+                    const startY = e.pageY - el.offsetTop;
+                    const startScroll = el.scrollTop;
+                    const onMove = (ev: MouseEvent) => { el.scrollTop = startScroll - (ev.pageY - el.offsetTop - startY); };
+                    const onUp = () => {
+                      el.style.cursor = 'grab';
+                      window.removeEventListener('mousemove', onMove);
+                      window.removeEventListener('mouseup', onUp);
+                    };
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                  }}
+                >
+                {visibleLights.map((light, i) => {
                   const isOn = light.state === 'on';
                   const name = light.attributes.friendly_name || light.entity_id.split('.')[1];
                   return (
-                    <div key={light.entity_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < devices.lights.length - 1 ? '1px solid #243356' : 'none' }}>
+                    <div key={light.entity_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < visibleLights.length - 1 ? '1px solid #243356' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Lightbulb style={{ width: 16, height: 16, color: isOn ? '#f7be1d' : '#8892a4' }} />
                         <span style={{ fontSize: 15, fontWeight: 500, color: '#e2e8f0' }}>{name}</span>
@@ -276,10 +418,11 @@ export function HomeAssistant({
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
           )}
-          {devices.switches.length > 0 && (
+          {isSectionVisible('switches') && devices.switches.length > 0 && (
             <div>
               <SectionHeader
                 icon={<Power style={{ width: 16, height: 16, color: '#adc6ff' }} />}
@@ -306,7 +449,7 @@ export function HomeAssistant({
       )}
 
       {/* Climate Control */}
-      {devices.climate.length > 0 && (
+      {isSectionVisible('climate') && devices.climate.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <SectionHeader
             icon={<Thermometer style={{ width: 16, height: 16, color: '#adc6ff' }} />}
@@ -325,7 +468,7 @@ export function HomeAssistant({
       )}
 
       {/* Media Players */}
-      {devices.media_players.length > 0 && (
+      {isSectionVisible('media') && devices.media_players.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <SectionHeader
             icon={<Music style={{ width: 16, height: 16, color: '#adc6ff' }} />}
@@ -357,6 +500,7 @@ export function HomeAssistant({
       )}
 
       {/* Surveillance */}
+      {isSectionVisible('surveillance') && (
       <div style={{ marginBottom: 24 }}>
         <SectionHeader
           icon={<Camera style={{ width: 16, height: 16, color: '#adc6ff' }} />}
@@ -367,11 +511,12 @@ export function HomeAssistant({
             </div>
           }
         />
-        <CamerasSection defaultExpanded={true} />
+        <CamerasSection defaultExpanded={true} hiddenCameraIds={hiddenCameras} />
       </div>
+      )}
 
       {/* No devices message */}
-      {devices.lights.length === 0 && devices.switches.length === 0 && devices.climate.length === 0 && devices.media_players.length === 0 && fixtures.length === 0 && (
+      {visibleLights.length === 0 && devices.switches.length === 0 && devices.climate.length === 0 && devices.media_players.length === 0 && fixtures.length === 0 && (
         <div style={{ background: '#162040', borderRadius: 12, padding: '32px', textAlign: 'center' }}>
           <Home style={{ width: 48, height: 48, margin: '0 auto 16px', color: '#8892a4' }} />
           <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>No Devices Found</h2>
@@ -388,7 +533,7 @@ export function HomeAssistant({
         isOpen={fixtureModalOpen}
         onClose={handleCloseFixtureModal}
         fixture={editingFixture}
-        availableLights={devices.lights}
+        availableLights={visibleLights}
         onCreate={handleCreateFixture}
         onUpdate={handleUpdateFixture}
       />

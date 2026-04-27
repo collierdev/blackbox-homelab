@@ -1,5 +1,5 @@
 import { DAVClient, createDAVClient, DAVCalendar, DAVCalendarObject } from 'tsdav';
-import { getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
+import { getDecryptedAccessToken, getSyncAccount, updateSyncAccount } from '../../models/syncAccount';
 import { createEvent, updateEvent, getEventBySyncDetails } from '../../models/event';
 
 const CALDAV_URL = process.env.CALDAV_URL || 'https://caldav.icloud.com';
@@ -99,7 +99,7 @@ export async function syncCalDAVCalendar(syncAccountId: string): Promise<void> {
     // For CalDAV, we store username in accountIdentifier and password in accessToken
     const client = await createClient(
       syncAccount.accountIdentifier,
-      syncAccount.accessToken
+      getDecryptedAccessToken(syncAccount)
     );
 
     // Fetch calendars
@@ -236,7 +236,7 @@ export async function pushEventToCalDAV(
 
   const client = await createClient(
     syncAccount.accountIdentifier,
-    syncAccount.accessToken
+    getDecryptedAccessToken(syncAccount)
   );
 
   const calendars = await client.fetchCalendars();
@@ -271,7 +271,7 @@ export async function deleteEventFromCalDAV(
 
   const client = await createClient(
     syncAccount.accountIdentifier,
-    syncAccount.accessToken
+    getDecryptedAccessToken(syncAccount)
   );
 
   const calendars = await client.fetchCalendars();

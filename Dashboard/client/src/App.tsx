@@ -31,10 +31,16 @@ const NAV_ITEMS: NavItem[] = [
 
 function Dashboard() {
   const savedSettings = loadSettings();
+  const initialHiddenSections = Array.isArray(savedSettings.smarthomeHiddenSections) ? savedSettings.smarthomeHiddenSections : [];
+  const initialHiddenLights = Array.isArray(savedSettings.smarthomeHiddenLights) ? savedSettings.smarthomeHiddenLights : [];
+  const initialHiddenCameras = Array.isArray(savedSettings.smarthomeHiddenCameras) ? savedSettings.smarthomeHiddenCameras : [];
   const [activeTab, setActiveTab] = useState<Tab>((savedSettings.defaultTab as Tab) || 'dashboard');
   const [currentTime, setCurrentTime] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [nodeName, setNodeName] = useState<string>(savedSettings.nodeName || 'NODE-01');
+  const [hiddenSections, setHiddenSections] = useState<string[]>(initialHiddenSections);
+  const [hiddenLights, setHiddenLights] = useState<string[]>(initialHiddenLights);
+  const [hiddenCameras, setHiddenCameras] = useState<string[]>(initialHiddenCameras);
 
   // React to settings saves without reload
   useEffect(() => {
@@ -42,6 +48,9 @@ function Dashboard() {
       const detail = (e as CustomEvent).detail;
       if (detail?.nodeName) setNodeName(detail.nodeName);
       if (detail?.defaultTab) setActiveTab(detail.defaultTab as Tab);
+      setHiddenSections(Array.isArray(detail?.smarthomeHiddenSections) ? detail.smarthomeHiddenSections : []);
+      setHiddenLights(Array.isArray(detail?.smarthomeHiddenLights) ? detail.smarthomeHiddenLights : []);
+      setHiddenCameras(Array.isArray(detail?.smarthomeHiddenCameras) ? detail.smarthomeHiddenCameras : []);
     };
     window.addEventListener('pi-settings-saved', handler);
     return () => window.removeEventListener('pi-settings-saved', handler);
@@ -85,8 +94,9 @@ function Dashboard() {
 
   const ipAddress = stats?.network?.interfaces?.[0]?.ip4 || '192.168.50.39';
 
+  const visibleLightCount = (haDevices?.lights?.filter((l) => !hiddenLights.includes(l.entity_id)).length || 0);
   const totalDeviceCount =
-    (haDevices?.lights?.length || 0) +
+    visibleLightCount +
     (haDevices?.switches?.length || 0) +
     (haDevices?.climate?.length || 0) +
     (haDevices?.media_players?.length || 0);
@@ -249,7 +259,7 @@ function Dashboard() {
         {/* Main content */}
         <main className="flex-1 overflow-hidden flex flex-col">
           {activeTab === 'dashboard' ? (
-            <SystemStats stats={stats} haDevices={haDevices} haStatus={haStatus} />
+            <SystemStats stats={stats} haDevices={haDevices} haStatus={haStatus} hiddenCameraIds={hiddenCameras} />
           ) : activeTab === 'smarthome' ? (
             <div className="h-full overflow-y-auto" style={{ padding: '28px 32px' }}>
               <div style={{ marginBottom: '24px' }}>
@@ -261,6 +271,9 @@ function Dashboard() {
               <HomeAssistant
                 devices={haDevices}
                 status={haStatus}
+                hiddenSections={hiddenSections}
+                hiddenLights={hiddenLights}
+                hiddenCameras={hiddenCameras}
                 onToggle={toggleEntity}
                 onLightBrightness={setLightBrightness}
                 onLightColor={setLightColor}

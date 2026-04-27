@@ -46,7 +46,7 @@ const io = new socket_io_1.Server(httpServer, {
 exports.io = io;
 const PORT = process.env.PORT || 3001;
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '25mb' }));
 // API Routes
 app.use('/api/system', system_1.default);
 app.use('/api/services', services_1.default);

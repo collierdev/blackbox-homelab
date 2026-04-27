@@ -58,9 +58,11 @@ function decryptToken(encrypted: string): string {
 export async function createSyncAccount(data: {
   provider: 'google' | 'microsoft' | 'caldav';
   email: string;
+  accountIdentifier?: string;
   accessToken: string;
   refreshToken?: string;
   tokenExpiry?: string;
+  expiresAt?: string;
 }): Promise<SyncAccount> {
   const session = getSession();
   const id = uuidv4();
@@ -73,10 +75,13 @@ export async function createSyncAccount(data: {
         id: $id,
         provider: $provider,
         email: $email,
+        accountIdentifier: $accountIdentifier,
         accessToken: $accessToken,
         refreshToken: $refreshToken,
         tokenExpiry: $tokenExpiry,
+        expiresAt: $expiresAt,
         lastSync: $lastSync,
+        lastSyncAt: $lastSyncAt,
         status: $status,
         errorMessage: $errorMessage,
         createdAt: datetime($createdAt),
@@ -88,11 +93,14 @@ export async function createSyncAccount(data: {
         id,
         provider: data.provider,
         email: data.email,
+        accountIdentifier: data.accountIdentifier || data.email,
         accessToken: encryptToken(data.accessToken),
         refreshToken: data.refreshToken ? encryptToken(data.refreshToken) : null,
         tokenExpiry: data.tokenExpiry || null,
+        expiresAt: data.expiresAt || null,
         lastSync: null,
-        status: 'connected',
+        lastSyncAt: null,
+        status: 'active',
         errorMessage: null,
         createdAt: now,
         updatedAt: now,

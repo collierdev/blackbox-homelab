@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Cpu, Wifi, Bot, Bell, Info, CalendarDays, Link2, Unlink } from 'lucide-react';
+import { X, Cpu, Wifi, Bot, Bell, Info, CalendarDays, Link2, Unlink, Home } from 'lucide-react';
+import type { HALight, Go2RTCCamera } from '../types';
 import type { SyncAccount } from '../types';
 
 interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'system' | 'connections' | 'ai' | 'calendar' | 'notifications' | 'about';
+type SettingsTab = 'system' | 'connections' | 'ai' | 'calendar' | 'smarthome' | 'notifications' | 'about';
 
 const C = {
   bg:    '#0b1326',
@@ -50,6 +51,9 @@ const DEFAULTS = {
   notifyDesktop:     false,
   notifyHA:          true,
   notifySystem:      true,
+  smarthomeHiddenSections: [] as string[],
+  smarthomeHiddenLights: [] as string[],
+  smarthomeHiddenCameras: [] as string[],
 };
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -133,6 +137,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: 'connections',   label: 'Connections',   icon: <Wifi size={16} /> },
   { id: 'ai',            label: 'AI & Models',   icon: <Bot size={16} /> },
   { id: 'calendar',      label: 'Calendar',      icon: <CalendarDays size={16} /> },
+  { id: 'smarthome',     label: 'Smart Home',    icon: <Home size={16} /> },
   { id: 'notifications', label: 'Notifications', icon: <Bell size={16} /> },
   { id: 'about',         label: 'About',         icon: <Info size={16} /> },
 ];
@@ -143,6 +148,16 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [settings, setSettings] = useState(() => ({ ...DEFAULTS, ...loadSettings() }));
   const [syncAccounts, setSyncAccounts] = useState<SyncAccount[]>([]);
   const [isLoadingSyncAccounts, setIsLoadingSyncAccounts] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<Record<string, { configured: boolean; clientId?: string; tenantId?: string }>>({});
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientSecret, setGoogleClientSecret] = useState('');
+  const [microsoftClientId, setMicrosoftClientId] = useState('');
+  const [microsoftClientSecret, setMicrosoftClientSecret] = useState('');
+  const [microsoftTenantId, setMicrosoftTenantId] = useState('common');
+  const [isImportingGoogleExport, setIsImportingGoogleExport] = useState(false);
+  const [haLights, setHaLights] = useState<HALight[]>([]);
+  const [cameraFeeds, setCameraFeeds] = useState<Go2RTCCamera[]>([]);
+  const [isLoadingSmartHomeItems, setIsLoadingSmartHomeItems] = useState(false);
 
   type S = typeof DEFAULTS;
   const set = <K extends keyof S>(key: K, value: S[K]) =>
@@ -177,6 +192,12 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   useEffect(() => {
     if (activeTab !== 'calendar') return;
     void loadSyncAccounts();
+    void loadProviderStatus();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'smarthome') return;
+    void loadSmartHomeItems();
   }, [activeTab]);
 
   const loadSyncAccounts = async () => {
@@ -191,6 +212,155 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     } finally {
       setIsLoadingSyncAccounts(false);
     }
+  };
+
+  const loadProviderStatus = async () => {
+    try {
+      const response = await fetch('/api/sync/providers/status');
+      if (!response.ok) return;
+      const data = await response.json();
+      setProviderStatus(data || {});
+      setGoogleClientId(data?.google?.clientId || '');
+      setMicrosoftClientId(data?.microsoft?.clientId || '');
+      setMicrosoftTenantId(data?.microsoft?.tenantId || 'common');
+    } catch (error) {
+      console.error('Failed to load provider status:', error);
+    }
+  };
+
+  const saveProviderConfig = async (provider: 'google' | 'microsoft') => {
+    try {
+      const payload = provider === 'google'
+        ? { clientId: googleClientId, clientSecret: googleClientSecret }
+        : { clientId: microsoftClientId, clientSecret: microsoftClientSecret, tenantId: microsoftTenantId || 'common' };
+
+      const response = await fetch(`/api/sync/providers/${provider}/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to save ${provider} OAuth config`);
+      }
+
+      if (provider === 'google') setGoogleClientSecret('');
+      if (provider === 'microsoft') setMicrosoftClientSecret('');
+      await loadProviderStatus();
+      alert(`${provider === 'google' ? 'Google' : 'Microsoft'} OAuth config saved.`);
+    } catch (error: any) {
+      console.error(`Failed to save ${provider} config:`, error);
+      alert(error.message || `Failed to save ${provider} config`);
+    }
+  };
+
+  const handleGoogleExportUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImportingGoogleExport(true);
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      const fileDataBase64 = btoa(binary);
+
+      const response = await fetch('/api/sync/import/google-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          fileDataBase64,
+          projectId: 'default',
+        }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.message || body.error || 'Failed to import calendar export');
+      }
+
+      alert(`Import complete: ${body.imported} imported, ${body.failed} failed.`);
+    } catch (error: any) {
+      console.error('Google export import failed:', error);
+      alert(error.message || 'Failed to import Google export');
+    } finally {
+      setIsImportingGoogleExport(false);
+      event.currentTarget.value = '';
+    }
+  };
+
+  const handleClearAllCalendarEntries = async () => {
+    const confirmed = confirm('This will permanently delete ALL calendar events. Are you sure?');
+    if (!confirmed) return;
+    const secondConfirm = confirm('Final confirmation: clear all calendar entries now?');
+    if (!secondConfirm) return;
+
+    try {
+      const response = await fetch('/api/calendar/events', { method: 'DELETE' });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || 'Failed to clear calendar entries');
+      }
+      alert(`Calendar cleared. Deleted ${body.deletedCount ?? 0} events.`);
+    } catch (error: any) {
+      console.error('Failed to clear calendar entries:', error);
+      alert(error.message || 'Failed to clear calendar entries');
+    }
+  };
+
+  const loadSmartHomeItems = async () => {
+    setIsLoadingSmartHomeItems(true);
+    try {
+      const [devicesRes, camerasRes] = await Promise.all([
+        fetch('/api/homeassistant/devices'),
+        fetch('/api/go2rtc/cameras'),
+      ]);
+
+      if (devicesRes.ok) {
+        const devices = await devicesRes.json();
+        setHaLights(Array.isArray(devices?.lights) ? devices.lights : []);
+      }
+
+      if (camerasRes.ok) {
+        const cameras = await camerasRes.json();
+        setCameraFeeds(Array.isArray(cameras) ? cameras : []);
+      }
+    } catch (error) {
+      console.error('Failed to load smart home settings items:', error);
+    } finally {
+      setIsLoadingSmartHomeItems(false);
+    }
+  };
+
+  const toggleSmartHomeSection = (sectionId: string) => {
+    const hidden = settings.smarthomeHiddenSections;
+    set('smarthomeHiddenSections', hidden.includes(sectionId)
+      ? hidden.filter((id: string) => id !== sectionId)
+      : [...hidden, sectionId]
+    );
+  };
+
+  const toggleHiddenLight = (entityId: string) => {
+    const hidden = settings.smarthomeHiddenLights;
+    set('smarthomeHiddenLights', hidden.includes(entityId)
+      ? hidden.filter((id: string) => id !== entityId)
+      : [...hidden, entityId]
+    );
+  };
+
+  const toggleHiddenCamera = (cameraId: string) => {
+    const hidden = settings.smarthomeHiddenCameras;
+    set('smarthomeHiddenCameras', hidden.includes(cameraId)
+      ? hidden.filter((id: string) => id !== cameraId)
+      : [...hidden, cameraId]
+    );
   };
 
   const handleDisconnectAccount = async (accountId: string) => {
@@ -208,8 +378,64 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
-  const handleConnectCalendar = (provider: 'google' | 'microsoft' | 'caldav') => {
-    alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar sync will be available soon! OAuth integration is currently being implemented.`);
+  const handleConnectCalendar = async (provider: 'google' | 'microsoft' | 'caldav') => {
+    try {
+      if (provider === 'caldav') {
+        const serverUrl = prompt('CalDAV server URL (example: https://caldav.icloud.com)');
+        if (!serverUrl) return;
+        const username = prompt('CalDAV username (often your email)');
+        if (!username) return;
+        const password = prompt('CalDAV app password');
+        if (!password) return;
+
+        const response = await fetch('/api/sync/caldav/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serverUrl,
+            username,
+            password,
+            email: username,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.message || body.error || 'Failed to connect CalDAV calendar');
+        }
+
+        await loadSyncAccounts();
+        alert('CalDAV calendar connected and synced.');
+        return;
+      }
+
+      const popup = window.open(
+        `/api/sync/${provider}/auth`,
+        `${provider}-calendar-auth`,
+        'width=620,height=760'
+      );
+
+      if (!popup) {
+        alert('Popup blocked. Please allow popups and try again.');
+        return;
+      }
+
+      const listener = async (event: MessageEvent) => {
+        if (event.data?.source !== 'pi-dashboard-sync') return;
+        window.removeEventListener('message', listener);
+        await loadSyncAccounts();
+        if (event.data.success) {
+          alert(event.data.message || 'Calendar connected successfully.');
+        } else {
+          alert(event.data.message || 'Calendar connection failed.');
+        }
+      };
+
+      window.addEventListener('message', listener);
+    } catch (error: any) {
+      console.error('Failed to connect calendar:', error);
+      alert(error.message || 'Failed to connect calendar');
+    }
   };
 
   const getProviderName = (provider: string) => {
@@ -360,6 +586,79 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   </div>
                 ))}
                 <div style={{ marginTop: 20 }}>
+                  <SectionLabel label="Data Management" />
+                  <div style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: 12, marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: C.dimmer, marginBottom: 10 }}>
+                      Remove all calendar entries from the dashboard database.
+                    </div>
+                    <button
+                      onClick={handleClearAllCalendarEntries}
+                      style={{
+                        background: 'rgba(255, 180, 171, 0.2)',
+                        color: C.red,
+                        border: `1px solid rgba(255, 180, 171, 0.35)`,
+                        borderRadius: 8,
+                        padding: '8px 12px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Clear All Calendar Entries
+                    </button>
+                  </div>
+                  <SectionLabel label="Google Export Import" />
+                  <div style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: 12, marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: C.dimmer, marginBottom: 10 }}>
+                      Upload Google Calendar export (.zip or .ics) to import events without OAuth.
+                    </div>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 8, padding: '8px 12px', color: C.text, fontSize: 12, fontWeight: 600, cursor: isImportingGoogleExport ? 'not-allowed' : 'pointer', opacity: isImportingGoogleExport ? 0.7 : 1 }}>
+                      {isImportingGoogleExport ? 'Importing...' : 'Upload Google Export'}
+                      <input
+                        type="file"
+                        accept=".zip,.ics"
+                        onChange={handleGoogleExportUpload}
+                        disabled={isImportingGoogleExport}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  <SectionLabel label="OAuth Provider Setup (Self-Hosted)" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 14 }}>
+                    <div style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+                        Google OAuth {providerStatus.google?.configured ? ' - Configured' : ' - Not Configured'}
+                      </div>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <TextInput value={googleClientId} onChange={setGoogleClientId} placeholder="Google Client ID" mono />
+                        <TextInput value={googleClientSecret} onChange={setGoogleClientSecret} placeholder="Google Client Secret (enter to set/update)" type="password" mono />
+                        <button
+                          onClick={() => saveProviderConfig('google')}
+                          disabled={!googleClientId || !googleClientSecret}
+                          style={{ background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 8, padding: '8px 10px', color: C.text, fontSize: 12, cursor: !googleClientId || !googleClientSecret ? 'not-allowed' : 'pointer', opacity: !googleClientId || !googleClientSecret ? 0.6 : 1 }}
+                        >
+                          Save Google OAuth Config
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+                        Microsoft OAuth {providerStatus.microsoft?.configured ? ' - Configured' : ' - Not Configured'}
+                      </div>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <TextInput value={microsoftClientId} onChange={setMicrosoftClientId} placeholder="Microsoft Client ID" mono />
+                        <TextInput value={microsoftClientSecret} onChange={setMicrosoftClientSecret} placeholder="Microsoft Client Secret (enter to set/update)" type="password" mono />
+                        <TextInput value={microsoftTenantId} onChange={setMicrosoftTenantId} placeholder="Tenant ID (default common)" mono />
+                        <button
+                          onClick={() => saveProviderConfig('microsoft')}
+                          disabled={!microsoftClientId || !microsoftClientSecret}
+                          style={{ background: C.l2, border: `1px solid ${C.l4}`, borderRadius: 8, padding: '8px 10px', color: C.text, fontSize: 12, cursor: !microsoftClientId || !microsoftClientSecret ? 'not-allowed' : 'pointer', opacity: !microsoftClientId || !microsoftClientSecret ? 0.6 : 1 }}
+                        >
+                          Save Microsoft OAuth Config
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <SectionLabel label="Calendar Linking" />
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 14 }}>
                     {isLoadingSyncAccounts ? (
@@ -405,8 +704,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                     {(['google', 'microsoft', 'caldav'] as const).map(provider => (
                       <button
                         key={provider}
+                        disabled={(provider === 'google' && !providerStatus.google?.configured) || (provider === 'microsoft' && !providerStatus.microsoft?.configured)}
                         onClick={() => handleConnectCalendar(provider)}
-                        style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: '10px 8px', color: C.text, fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        style={{ background: C.l0, border: `1px solid ${C.l4}`, borderRadius: 8, padding: '10px 8px', color: C.text, fontSize: 12, fontWeight: 500, cursor: ((provider === 'google' && !providerStatus.google?.configured) || (provider === 'microsoft' && !providerStatus.microsoft?.configured)) ? 'not-allowed' : 'pointer', opacity: ((provider === 'google' && !providerStatus.google?.configured) || (provider === 'microsoft' && !providerStatus.microsoft?.configured)) ? 0.55 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
                         <Link2 size={13} color={C.blue} />
                         {provider === 'google' ? 'Google' : provider === 'microsoft' ? 'Outlook' : 'CalDAV'}
@@ -437,6 +737,74 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                     <Toggle on={settings[item.key] as boolean} onChange={v => set(item.key, v)} />
                   </div>
                 ))}
+              </div>
+            )}
+
+            {activeTab === 'smarthome' && (
+              <div>
+                <SectionLabel label="Sections" />
+                {[
+                  { id: 'fixtures', label: 'Light Fixtures', desc: 'Grouped room/fixture controls' },
+                  { id: 'lights', label: 'Smart Lights', desc: 'Individual light toggles and dimmers' },
+                  { id: 'switches', label: 'Switches & Relays', desc: 'Binary switch devices' },
+                  { id: 'climate', label: 'Climate Control', desc: 'Thermostats and HVAC controls' },
+                  { id: 'media', label: 'Media Players', desc: 'Speakers and media endpoints' },
+                  { id: 'surveillance', label: 'Surveillance', desc: 'Camera feeds and snapshots' },
+                ].map(section => {
+                  const hidden = settings.smarthomeHiddenSections.includes(section.id);
+                  return (
+                    <div key={section.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 0', borderBottom: `1px solid ${C.l3}` }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{section.label}</div>
+                        <div style={{ fontSize: 11, color: C.dimmer, marginTop: 3 }}>{section.desc}</div>
+                      </div>
+                      <Toggle on={!hidden} onChange={() => toggleSmartHomeSection(section.id)} />
+                    </div>
+                  );
+                })}
+
+                <div style={{ marginTop: 22 }}>
+                  <SectionLabel label="Hidden Lights" />
+                  {isLoadingSmartHomeItems ? (
+                    <div style={{ fontSize: 12, color: C.dimmer }}>Loading lights...</div>
+                  ) : haLights.length === 0 ? (
+                    <div style={{ fontSize: 12, color: C.dimmer }}>No lights found.</div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
+                      {haLights.map((light) => {
+                        const name = light.attributes.friendly_name || light.entity_id;
+                        const hidden = settings.smarthomeHiddenLights.includes(light.entity_id);
+                        return (
+                          <label key={light.entity_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: `1px solid ${C.l4}`, borderRadius: 8, background: C.l0, color: C.text, fontSize: 12, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={hidden} onChange={() => toggleHiddenLight(light.entity_id)} />
+                            <span>{name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 22 }}>
+                  <SectionLabel label="Hidden Cameras" />
+                  {isLoadingSmartHomeItems ? (
+                    <div style={{ fontSize: 12, color: C.dimmer }}>Loading cameras...</div>
+                  ) : cameraFeeds.length === 0 ? (
+                    <div style={{ fontSize: 12, color: C.dimmer }}>No cameras found.</div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
+                      {cameraFeeds.map((camera) => {
+                        const hidden = settings.smarthomeHiddenCameras.includes(camera.id);
+                        return (
+                          <label key={camera.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: `1px solid ${C.l4}`, borderRadius: 8, background: C.l0, color: C.text, fontSize: 12, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={hidden} onChange={() => toggleHiddenCamera(camera.id)} />
+                            <span>{camera.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

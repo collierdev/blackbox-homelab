@@ -76,6 +76,11 @@ export async function initializeSchema(): Promise<void> {
       FOR (sa:SyncAccount) REQUIRE sa.id IS UNIQUE
     `);
 
+    await session.run(`
+      CREATE CONSTRAINT provider_config_provider IF NOT EXISTS
+      FOR (pc:ProviderConfig) REQUIRE pc.provider IS UNIQUE
+    `);
+
     // Indexes for performance
     await session.run(`
       CREATE INDEX event_datetime IF NOT EXISTS
