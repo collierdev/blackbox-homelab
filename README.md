@@ -39,43 +39,43 @@ A guided tour of the seven main views in the Pi Dashboard. All assets live under
 
 ### System
 
-![System overview](docs/screenshots/01-system-overview.png)
+![System overview](Dashboard/docs/screenshots/01-system-overview.png)
 
 The default landing view — `NODE-01` status, command palette, real-time CPU / memory / disk / core temp / uptime tiles, every Docker container with up-time, smart-home rollups (lights on, switches on, climate, media), live security feeds, and a network-interface table (eth0, tailscale0, docker0, br-*).
 
 ### Smart Home — Environment Control
 
-![Environment Control](docs/screenshots/02-smart-home.png)
+![Environment Control](Dashboard/docs/screenshots/02-smart-home.png)
 
 Direct controls for the Home Assistant entities surfaced through the dashboard: Light Fixtures cards (per-room toggle + brightness + Color & Effects), the Smart Lights list with one-tap toggles, Media Players, and an integrated Surveillance grid streaming the go2rtc feeds with a live `● REC` indicator.
 
 ### Calendar & Tasks
 
-![Calendar](docs/screenshots/03-calendar.png)
+![Calendar](Dashboard/docs/screenshots/03-calendar.png)
 
 Unified calendar + tasks view with month / week / day / 2-month / circular layouts. The header gear opens **Calendar Settings** — connect Google / Microsoft / iCloud / generic CalDAV providers and manage colored projects via the shared `ColorPicker` component (`client/src/components/shared/ColorPicker.tsx`).
 
 ### AI Chat
 
-![AI Chat](docs/screenshots/04-ai-chat.png)
+![AI Chat](Dashboard/docs/screenshots/04-ai-chat.png)
 
 Streaming chat console wired to **Ollama** by default (model `llama3.2:latest` is shown) with optional Claude API fallback. Includes a context attachment chip, voice input, and contextual command suggestions ("Run diagnostic on router") backed by `/api/chat/ollama` and `/api/chat/claude`.
 
 ### Planner
 
-![Planner](docs/screenshots/05-planner.png)
+![Planner](Dashboard/docs/screenshots/05-planner.png)
 
 Daily focus board: today's schedule pulled from synced calendars, current focus block, daily routines (Hydrate / Review Logs / Clear Inbox / Set Priorities), an "Up Next" reminder, a daily snippet/quote, and an environment readout (temp + humidity). Pending tasks at left flag overdue items in red.
 
 ### Vault
 
-![Vault](docs/screenshots/06-vault.png)
+![Vault](Dashboard/docs/screenshots/06-vault.png)
 
 Markdown / code editor scoped to `/home/jwcollie` with a tree explorer, bookmarked roots (Home / Dashboard / Shared / Documents), and a side-panel **Assistant** wired to a local model (`llama3.2`) for context-aware editing. Supports `.md`, `.txt`, `.py`, `.js`, `.ts`, `.json` and more — backed by CouchDB for Obsidian LiveSync compatibility.
 
 ### Settings
 
-![Settings](docs/screenshots/07-settings.png)
+![Settings](Dashboard/docs/screenshots/07-settings.png)
 
 Modal preferences for **System** (node name shown in header, default landing tab, stats refresh interval), **Connections** (Home Assistant / go2rtc / Ollama URLs and tokens), **AI & Models**, **Calendar** (OAuth provider setup), **Smart Home**, **Notifications**, and an **About** pane.
 
