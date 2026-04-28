@@ -1,621 +1,263 @@
-![Banner](Dashboard/docs/screenshots/banner.png)
-# Blackbox Homelab — Raspberry Pi 5 Platform
+# Blackbox Homelab 
 
-A self-hosted homelab and dashboard stack running on a Raspberry Pi 5. Bundles a custom React/Node dashboard, Home Assistant, MQTT, Govee bridge, media servers, camera streaming, automation, and a graph database — all behind an nginx reverse proxy with friendly `*.blackbox` URLs.
-
-- **Host**: Raspberry Pi 5 (ARM64 / aarch64)
-- **OS**: Debian GNU/Linux 13 (trixie)
-- **Static IP**: `192.168.50.39`
-- **Primary URL**: `http://blackbox/` (or `http://192.168.50.39:8080`)
+> **Video Walkthrough:** https://www.youtube.com/watch?v=jWm0GwgtvWo
+> **Live Repo:** [github.com/collierdev/blackbox-homelab](https://github.com/collierdev/blackbox-homelab)
 
 ---
 
-## Table of Contents
+## Problem Statement
 
-0. [Screens](#0-screens)
-1. [Platform Overview](#1-platform-overview)
-2. [Prerequisites](#2-prerequisites)
-3. [Base System Setup](#3-base-system-setup)
-4. [Install Docker & Docker Compose](#4-install-docker--docker-compose)
-5. [Install Node.js & Build Tools](#5-install-nodejs--build-tools)
-6. [Install Portainer (Docker UI)](#6-install-portainer-docker-ui)
-7. [Install Mosquitto (MQTT Broker)](#7-install-mosquitto-mqtt-broker)
-8. [Install Home Assistant](#8-install-home-assistant)
-9. [Install govee2mqtt (Govee → MQTT Bridge)](#9-install-govee2mqtt-govee--mqtt-bridge)
-10. [Install go2rtc (Camera Streaming)](#10-install-go2rtc-camera-streaming)
-11. [Install n8n (Workflow Automation)](#11-install-n8n-workflow-automation)
-12. [Install Jellyfin / Plex (Media)](#12-install-jellyfin--plex-media)
-13. [Install Neo4j (Graph Database)](#13-install-neo4j-graph-database)
-14. [Install nginx Reverse Proxy + dnsmasq](#14-install-nginx-reverse-proxy--dnsmasq)
-15. [Install the Pi Dashboard (React + Node)](#15-install-the-pi-dashboard-react--node)
-16. [Optional Services](#16-optional-services)
-17. [Open Source Software & Libraries Used](#17-open-source-software--libraries-used)
-18. [Maintenance](#18-maintenance)
+Knowledge workers juggling multiple domains face a fragmented tool landscape — notes in one app, tasks in another, calendars in a third, home automation in a fourth. The "solutions" are expensive SaaS subscriptions ($15–50/month each) that lock your data in proprietary silos and require constant cloud connectivity.
+
+As a developer working across clinical data, bioinformatics, and full-stack development, I experience this daily: ~20 minutes of context-gathering across 4–5 tools before productive work begins. I also need an AI assistant that understands my personal knowledge base — but routing everything through cloud APIs burns tokens on simple retrieval tasks that should run locally for pennies.
+
+**Who's affected:** Developers, knowledge workers, and homelab builders who want AI-augmented personal infrastructure without enterprise pricing or vendor lock-in.
+
+**What success looks like:** A single self-hosted platform on commodity hardware (<$200 total BOM) that consolidates daily planning, smart home control, file management, media, cameras, and AI-assisted editing — reducing morning context-gathering to a glance at a wall-mounted display. Target outcomes: fewer context switches per day, 60–80% reduction in AI API spend via local model offloading, and zero recurring SaaS costs for core productivity tools.
 
 ---
 
-## 0. Screens
+## Solution Overview
 
-A guided tour of the seven main views in the Pi Dashboard. All assets live under `docs/screenshots/` — drop the captured images in there with the filenames below.
+Blackbox Homelab is a self-hosted platform running on a Raspberry Pi 5 that replaces a half-dozen SaaS tools with a single Docker Compose stack. At its core is a custom **React 18 + Express 5** dashboard with seven integrated views:
 
-### System
+**System Dashboard** — Real-time CPU, memory, disk, temperature, and Docker container status at a glance. Network interfaces, smart-home rollups (lights, switches, climate, media), and live security camera feeds.
 
-![System overview](Dashboard/docs/screenshots/01-system-overview.png)
+**Smart Home** — Direct control of Home Assistant entities: per-room light toggles with brightness/color, media players, and a surveillance grid streaming go2rtc camera feeds.
 
-The default landing view — `NODE-01` status, command palette, real-time CPU / memory / disk / core temp / uptime tiles, every Docker container with up-time, smart-home rollups (lights on, switches on, climate, media), live security feeds, and a network-interface table (eth0, tailscale0, docker0, br-*).
+**Calendar & Tasks** — Unified calendar with month/week/day layouts, Google/Microsoft/iCloud/CalDAV sync, and integrated task management backed by Neo4j.
 
-### Smart Home — Environment Control
+**AI Chat** — Streaming chat console wired to Ollama (local models like `llama3.2`) with Claude API fallback. Context attachments, voice input, and contextual command suggestions.
 
-![Environment Control](Dashboard/docs/screenshots/02-smart-home.png)
+**Planner** — Daily focus board: today's schedule from synced calendars, current focus block, daily routines, "Up Next" reminders, and an environment readout. Drag-and-drop prioritization via @dnd-kit.
 
-Direct controls for the Home Assistant entities surfaced through the dashboard: Light Fixtures cards (per-room toggle + brightness + Color & Effects), the Smart Lights list with one-tap toggles, Media Players, and an integrated Surveillance grid streaming the go2rtc feeds with a live `● REC` indicator.
+**Vault** — Markdown/code editor with tree explorer, bookmarked filesystem roots, and a side-panel AI assistant for context-aware editing. Backed by CouchDB for Obsidian LiveSync compatibility.
 
-### Calendar & Tasks
+**Settings** — System config, service connections (Home Assistant, go2rtc, Ollama URLs/tokens), AI model preferences, calendar OAuth setup, and notification preferences.
 
-![Calendar](Dashboard/docs/screenshots/03-calendar.png)
-
-Unified calendar + tasks view with month / week / day / 2-month / circular layouts. The header gear opens **Calendar Settings** — connect Google / Microsoft / iCloud / generic CalDAV providers and manage colored projects via the shared `ColorPicker` component (`client/src/components/shared/ColorPicker.tsx`).
-
-### AI Chat
-
-![AI Chat](Dashboard/docs/screenshots/04-ai-chat.png)
-
-Streaming chat console wired to **Ollama** by default (model `llama3.2:latest` is shown) with optional Claude API fallback. Includes a context attachment chip, voice input, and contextual command suggestions ("Run diagnostic on router") backed by `/api/chat/ollama` and `/api/chat/claude`.
-
-### Planner
-
-![Planner](Dashboard/docs/screenshots/05-planner.png)
-
-Daily focus board: today's schedule pulled from synced calendars, current focus block, daily routines (Hydrate / Review Logs / Clear Inbox / Set Priorities), an "Up Next" reminder, a daily snippet/quote, and an environment readout (temp + humidity). Pending tasks at left flag overdue items in red.
-
-### Vault
-
-![Vault](Dashboard/docs/screenshots/06-vault.png)
-
-Markdown / code editor scoped to `/home/jwcollie` with a tree explorer, bookmarked roots (Home / Dashboard / Shared / Documents), and a side-panel **Assistant** wired to a local model (`llama3.2`) for context-aware editing. Supports `.md`, `.txt`, `.py`, `.js`, `.ts`, `.json` and more — backed by CouchDB for Obsidian LiveSync compatibility.
-
-### Settings
-
-![Settings](Dashboard/docs/screenshots/07-settings.png)
-
-Modal preferences for **System** (node name shown in header, default landing tab, stats refresh interval), **Connections** (Home Assistant / go2rtc / Ollama URLs and tokens), **AI & Models**, **Calendar** (OAuth provider setup), **Smart Home**, **Notifications**, and an **About** pane.
-
-> **Capture method:** screenshots were taken from a 1440×900 viewport via the Claude-in-Chrome MCP, saved to the workstation, and committed under `Dashboard/docs/screenshots/`. To re-record, open `http://blackbox/`, click each sidebar icon (System → Smart Home → Calendar → AI Chat → Planner → Vault → Settings), and capture the full viewport.
+**AI's role is core, not supplementary.** Without AI, this is a static dashboard and a text editor. AI transforms it into a system that understands your knowledge base, prioritizes your day, and provides agentic editing — all from hardware costing less than two months of typical SaaS subscriptions.
 
 ---
 
-## 1. Platform Overview
+## AI Integration
 
-| Layer | Tool |
-|------|------|
-| OS | Debian 13 (trixie) on Pi 5 |
-| Container runtime | Docker Engine + Compose v2 |
-| Reverse proxy | nginx |
-| Local DNS | dnsmasq (`*.blackbox` → `192.168.50.39`) |
-| Storage | ZFS pool `blackbox` (LZ4 + auto-snapshots) |
-| File sharing | Samba (`\\blackbox`) |
-| Smart home | Home Assistant + Mosquitto MQTT + govee2mqtt |
-| Cameras | go2rtc |
-| Media | Jellyfin, Plex |
-| Automation | n8n |
-| AI / LLM | Ollama (local models) |
-| Database | Neo4j (graph), CouchDB (LiveSync vault) |
-| Dashboard | Custom React 19 + Express 5 app |
+### Models & APIs
 
----
+**Claude 3.5 Sonnet (Anthropic API)** — Primary model for complex agentic tasks: multi-file edits, code generation, reasoning over large context. Used when task complexity justifies token cost. Accessed via the Express backend at `/api/chat/claude`.
 
-## 2. Prerequisites
+**Ollama (local — llama3.2, Deepseek-R1 7B, Gemma 2 2B)** — Lightweight local models for RAG retrieval, Q&A over the personal knowledge base, and file summarization. Runs on-device (ARM64) to minimize API spend. The AI Chat panel defaults to Ollama with automatic Claude fallback.
 
-### Hardware
+**Gemini 1.5 Flash (Google API)** — Planned mid-tier option for moderate-complexity tasks. Not yet integrated.
 
-- Raspberry Pi 5 (4 GB or 8 GB)
-- 64 GB+ microSD or NVMe boot drive
-- External USB drive for ZFS pool (optional but recommended)
-- Wired ethernet (more reliable than Wi-Fi for a server)
+### Agentic Patterns
 
-### Network
+**Tiered model routing** — Simple retrieval queries ("what did I write about X?") route to Ollama locally; complex synthesis queries route to Claude. This is the key cost optimization — ~70% of queries stay local.
 
-- Static DHCP reservation or static IP for the Pi (this guide uses `192.168.50.39`)
-- Open ports on the LAN: `22, 53, 80, 443, 1883, 1984, 5678, 8080, 8096, 8123, 32400`
+**Tool use** — File system operations (read, write, create, rename, search) exposed as tools to the LLM via function calling, enabling agentic file management from the Vault editor. The model chains tools autonomously — e.g., "refactor this file and update imports" triggers read → identify changes → write → search dependents → update.
 
-### Software you should have first
+**Context-aware planning** — The Planner uses chain-of-thought to prioritize tasks based on deadlines, routine patterns, and knowledge base context, incorporating today's calendar, overdue items, and recently edited files.
 
-- Raspberry Pi OS Lite (64-bit) **or** Debian 13 ARM64
-- A workstation with SSH access to the Pi
-- A GitHub account (for `gh` CLI and cloning repos)
+### Tradeoffs & Honest Assessment
 
-### Accounts / API keys you'll want eventually
+**Local-first with cloud fallback** — Lower cost but higher latency for complex tasks. Ollama on the Pi 5 is painfully slow beyond simple retrieval: 7B models take 8–15 seconds per query vs. sub-second via API. This forces more traffic to Claude than planned and is the project's biggest ongoing cost challenge.
 
-- Govee Developer API key (for `govee2mqtt`)
-- Google or Microsoft OAuth credentials (for calendar sync — optional)
-- Tailscale account (for remote access — optional)
+**RAG over full-context** — Cheaper but risks missing cross-document connections.
+
+**What exceeded expectations:** Claude's tool-use capabilities made the agentic Vault editor far simpler than expected. Defining file operations as tools and letting the model orchestrate multi-step edits worked remarkably well — less glue code than anticipated.
+
+**What fell short:** Local inference speed. 7B models produce acceptable RAG results but struggle with multi-step reasoning. This is the primary motivation for tracking smaller, more capable models (Phi-4, Gemma 3) as they release.
 
 ---
 
-## 3. Base System Setup
+## Architecture
 
-```bash
-# Update everything
-sudo apt update && sudo apt full-upgrade -y
-
-# Core utilities
-sudo apt install -y \
-  git curl wget unzip ca-certificates gnupg lsb-release \
-  build-essential python3 python3-pip \
-  tmux htop neofetch jq \
-  fail2ban ufw
-
-# Add yourself to a few useful groups (re-login after this)
-sudo usermod -aG docker,sudo $USER
+```
+┌───────────────────────────────────────────────────┐
+│                  Client Browser                    │
+│  7 Views: System │ Smart Home │ Calendar │ AI Chat │
+│           Planner │ Vault │ Settings               │
+│  (React 19 + Vite 7 + TailwindCSS 4)              │
+└──────────────────────┬────────────────────────────┘
+                       │
+                       ▼
+┌───────────────────────────────────────────────────┐
+│         nginx reverse proxy + dnsmasq              │
+│    (*.blackbox wildcard DNS → 192.168.50.39)       │
+└──────────────────────┬────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+  ┌───────────┐  ┌──────────┐  ┌──────────────┐
+  │ Express 5 │  │  Ollama   │  │Home Assistant │
+  │ + Socket  │  │ (local   │  │  + Mosquitto  │
+  │   .IO     │  │  LLMs)   │  │  + govee2mqtt │
+  │ (TS/Node) │  └──────────┘  └──────────────┘
+  └─────┬─────┘
+        │
+   ┌────┼─────────┬──────────┐
+   ▼    ▼         ▼          ▼
+Claude  Neo4j    CouchDB    go2rtc
+ API   (graph   (Obsidian   (camera
+       DB)      LiveSync)   streams)
 ```
 
-`★ Insight ─────────────────────────────────────`
-`build-essential` (gcc, g++, make) is needed because several npm packages (notably `dockerode` and `node-ical`) compile native bindings on ARM64 the first time you `npm install`.
-`─────────────────────────────────────────────────`
+### Key Decisions
+
+**Raspberry Pi 5 (8GB)** — $80 board with enough RAM for 7B quantized models via Ollama plus the full Docker stack. Total BOM under $200 including case, SD card, power supply.
+
+**Docker Compose for everything** — Every service containerized and reproducible. The stack includes: nginx, Express+React dashboard, Neo4j, CouchDB, Home Assistant, Mosquitto, govee2mqtt, go2rtc, n8n, Jellyfin, Portainer.
+
+**Express 5 + TypeScript backend** — Chosen for ecosystem alignment: the entire stack is JavaScript/TypeScript. Socket.IO provides real-time system stats streaming. Neo4j driver, googleapis, and @microsoft/microsoft-graph-client handle data and calendar sync.
+
+**React 18 + Vite 7 frontend** — @tanstack/react-query for server state, d3 for charting, @dnd-kit for drag-and-drop planner, react-markdown for AI chat and vault rendering.
+
+**Neo4j for structured data** — Tasks, planner relationships, and encrypted OAuth tokens stored in a graph DB. CouchDB handles the markdown vault (Obsidian LiveSync compatible).
+
+**nginx + dnsmasq** — Single entry point with wildcard DNS so every service gets a friendly `*.blackbox` URL on the LAN.
+
+**Local-first data** — All data stays on the Pi. Markdown files are the source of truth for notes. Neo4j stores structured relationships. No cloud sync dependency.
+
+### Notable Tradeoffs
+
+**Single Pi = single point of failure** — Accepted for personal use; ZFS auto-snapshots and daily backups mitigate data loss risk.
+
+**Socket.IO for real-time stats** — Adds nginx config complexity (WebSocket upgrade headers) but enables live system monitoring without polling.
+
+**Full service stack on one board** — Ambitious for a Pi 5, but containerization lets you disable what you don't need. Memory headroom is tight when Ollama is running alongside everything else.
 
 ---
 
-## 4. Install Docker & Docker Compose
+## What Did AI Help You Do Faster (and Where Did It Get in the Way)?
 
-```bash
-# Official Docker apt repo (works on Debian 13)
-curl -fsSL https://download.docker.com/linux/debian/gpg | \
-  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+### Tools Used
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/debian $(lsb_release -cs) stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+**Claude Code & Cowork** — Primary development tool. Scaffolded the Express backend, wrote Docker configurations, debugged nginx routing, and iterated on all seven React views. Claude Code's ability to read full project context and make coordinated multi-file changes was the biggest accelerator.
 
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io \
-                    docker-buildx-plugin docker-compose-plugin
+**Cursor** — Rapid iteration on React components, especially the Vault editor. Inline completions were faster for small, focused edits.
 
-# Test
-docker --version
-docker compose version
-```
+**ChatGPT (GPT-4o)** — Brainstorming architecture approaches, generating visual assets for the demo video, rubber-ducking design decisions.
 
-Log out and back in so your group membership takes effect (no more `sudo docker`).
+**Google Stitch and Claude Design** — Rapid prototyping of front-end designs and UI mockups for all seven dashboard views.
 
----
+### Where AI Accelerated
 
-## 5. Install Node.js & Build Tools
+Boilerplate elimination, compatibility bug fixes, and workflow automation were the biggest wins — Docker Compose configs, Express route scaffolding, React component structure all generated in minutes instead of hours. Claude Code diagnosed an nginx WebSocket upgrade misconfiguration that would have taken significant time to debug manually. I also used Claude to rapidly prototype three different approaches to tiered model routing before committing to one.
 
-The Pi Dashboard targets **Node.js 24.x** and **npm 11.x**.
+### Where AI Got in the Way
 
-```bash
-# Install Node 24 LTS via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt install -y nodejs
+**ARM64 blind spots** — AI models consistently suggested x86-only libraries or approaches assuming abundant RAM. Every dependency needed manual ARM64 compatibility verification.
 
-node --version   # v24.x
-npm  --version   # 11.x
-```
+**Ollama on ARM** — Claude's knowledge of Ollama configuration on ARM was sometimes outdated. Ended up referencing GitHub issues directly for correct model pull syntax and memory tuning.
+
+**Over-engineering tendency** — AI suggestions sometimes introduced unnecessary abstraction (e.g., a full plugin system for model routing when a simple conditional was sufficient). Had to consciously keep the architecture simple for a resource-constrained device.
 
 ---
 
-## 6. Install Portainer (Docker UI)
+## Getting Started
+
+### Prerequisites
+
+- Raspberry Pi 5 (8GB recommended) with Debian 13 or Raspberry Pi OS 64-bit
+- Docker Engine + Compose v2
+- Node.js 24.x + npm 11.x
+- 64GB+ microSD or NVMe (128GB recommended for model storage)
+- Static IP on the LAN (guide uses `192.168.50.39`)
+
+### Quick Start
 
 ```bash
-docker volume create portainer_data
-
-docker run -d \
-  --name portainer \
-  --restart=always \
-  -p 9443:9443 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v portainer_data:/data \
-  portainer/portainer-ce:latest
-```
-
-Open `https://192.168.50.39:9443` and create the admin user on first launch.
-
----
-
-## 7. Install Mosquitto (MQTT Broker)
-
-Mosquitto is the message bus that connects Home Assistant, govee2mqtt, and any other MQTT producers/consumers.
-
-```bash
-mkdir -p ~/mosquitto/{config,data,log}
-
-cat > ~/mosquitto/config/mosquitto.conf <<'EOF'
-listener 1883
-allow_anonymous false
-password_file /mosquitto/config/passwd
-persistence true
-persistence_location /mosquitto/data/
-log_dest file /mosquitto/log/mosquitto.log
-EOF
-
-# Create a user (you will be prompted for a password)
-docker run -it --rm \
-  -v ~/mosquitto/config:/mosquitto/config \
-  eclipse-mosquitto:2 \
-  mosquitto_passwd -c /mosquitto/config/passwd mqttuser
-
-# Run the broker
-docker run -d \
-  --name mosquitto \
-  --restart=always \
-  -p 1883:1883 \
-  -v ~/mosquitto/config:/mosquitto/config \
-  -v ~/mosquitto/data:/mosquitto/data \
-  -v ~/mosquitto/log:/mosquitto/log \
-  eclipse-mosquitto:2
-```
-
-Test from another machine: `mosquitto_pub -h 192.168.50.39 -u mqttuser -P <pw> -t test -m hello`.
-
----
-
-## 8. Install Home Assistant
-
-```bash
-docker volume create homeassistant_config
-
-docker run -d \
-  --name homeassistant \
-  --restart=always \
-  --privileged \
-  --network=host \
-  -e TZ=America/Chicago \
-  -v homeassistant_config:/config \
-  -v /run/dbus:/run/dbus:ro \
-  ghcr.io/home-assistant/home-assistant:stable
-```
-
-Open `http://192.168.50.39:8123`, create the owner account, then:
-
-1. **Settings → Devices & Services → Add Integration → MQTT**
-2. Point it at `192.168.50.39:1883` with the `mqttuser` credentials above.
-3. Generate a **Long-Lived Access Token** (profile menu) — you'll paste this into the dashboard `.env` as `HA_TOKEN`.
-
-`★ Insight ─────────────────────────────────────`
-`--network=host` is required so HA can do mDNS discovery for Sonos, HomeKit, ESPHome, etc. The trade-off is you can't put HA behind a Docker bridge, so it shares the host's port table with everything else — that's why we use nginx subdomains rather than path prefixes for it.
-`─────────────────────────────────────────────────`
-
----
-
-## 9. Install govee2mqtt (Govee → MQTT Bridge)
-
-Bridges Govee LAN/BLE devices into MQTT so Home Assistant can autodiscover them.
-
-```bash
-mkdir -p ~/govee2mqtt
-cat > ~/govee2mqtt/govee.toml <<'EOF'
-[govee]
-api_key = "YOUR_GOVEE_API_KEY"
-
-[mqtt]
-host = "192.168.50.39"
-port = 1883
-user = "mqttuser"
-password = "YOUR_MQTT_PASSWORD"
-EOF
-
-docker run -d \
-  --name govee2mqtt \
-  --restart=always \
-  --network=host \
-  -v ~/govee2mqtt/govee.toml:/etc/govee.toml:ro \
-  -e RUST_LOG=info \
-  ghcr.io/wez/govee2mqtt:latest
-```
-
-Get a free API key at <https://developer.govee.com/>. Within ~30 seconds your Govee lights will appear under **Settings → Devices** in Home Assistant via MQTT autodiscovery.
-
----
-
-## 10. Install go2rtc (Camera Streaming)
-
-```bash
-mkdir -p ~/go2rtc
-cat > ~/go2rtc/go2rtc.yaml <<'EOF'
-streams:
-  # example:
-  # front_door: rtsp://user:pass@192.168.50.50/stream1
-api:
-  listen: ":1984"
-EOF
-
-docker run -d \
-  --name go2rtc \
-  --restart=always \
-  --network=host \
-  -v ~/go2rtc/go2rtc.yaml:/config/go2rtc.yaml \
-  alexxit/go2rtc:latest
-```
-
-Web UI: `http://192.168.50.39:1984`.
-
----
-
-## 11. Install n8n (Workflow Automation)
-
-```bash
-docker volume create n8n_data
-
-docker run -d \
-  --name n8n \
-  --restart=always \
-  -p 5678:5678 \
-  -e GENERIC_TIMEZONE=America/Chicago \
-  -e N8N_HOST=n8n.blackbox \
-  -v n8n_data:/home/node/.n8n \
-  docker.n8n.io/n8nio/n8n:latest
-```
-
-Open `http://192.168.50.39:5678`, create the admin account.
-
----
-
-## 12. Install Jellyfin / Plex (Media)
-
-### Jellyfin
-
-```bash
-docker volume create jellyfin_config
-
-docker run -d \
-  --name jellyfin \
-  --restart=always \
-  -p 8096:8096 \
-  -v jellyfin_config:/config \
-  -v /blackbox/jellyfin:/media:ro \
-  jellyfin/jellyfin:latest
-```
-
-### Plex (system package — uses host hardware codecs better)
-
-```bash
-sudo apt install -y plexmediaserver
-sudo systemctl enable --now plexmediaserver
-```
-
-Plex web UI: `http://192.168.50.39:32400/web`.
-
----
-
-## 13. Install Neo4j (Graph Database)
-
-The Pi Dashboard uses Neo4j as its primary store for tasks, planner relationships, and encrypted OAuth tokens.
-
-It is started **automatically** by the Pi Dashboard's `docker-compose.yml` (see section 15), so you typically don't run it standalone. If you want a manual install:
-
-```bash
-docker run -d \
-  --name neo4j \
-  --restart=always \
-  -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/change_me \
-  -e NEO4J_PLUGINS='["apoc"]' \
-  -v neo4j_data:/data \
-  neo4j:5.15
-```
-
-Browser: `http://192.168.50.39:7474`.
-
----
-
-## 14. Install nginx Reverse Proxy + dnsmasq
-
-```bash
-sudo apt install -y nginx dnsmasq
-```
-
-### dnsmasq — wildcard DNS for `*.blackbox`
-
-```bash
-sudo tee /etc/dnsmasq.d/blackbox.conf <<'EOF'
-address=/blackbox/192.168.50.39
-EOF
-sudo systemctl restart dnsmasq
-```
-
-### nginx — friendly URLs
-
-Create one server block per service, e.g.:
-
-```nginx
-# /etc/nginx/sites-available/jellyfin.blackbox
-server {
-  listen 80;
-  server_name jellyfin.blackbox;
-  location / {
-    proxy_pass http://127.0.0.1:8096;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-  }
-}
-```
-
-Then:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/jellyfin.blackbox /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-Repeat for `n8n.blackbox`, `ha.blackbox`, `go2rtc.blackbox`, `plex.blackbox`, `vault.blackbox` (HTTPS), and a root vhost for the dashboard at `blackbox/`.
-
-To use the friendly names from any device on the LAN, set `192.168.50.39` as the primary DNS server in your router's DHCP settings.
-
----
-
-## 15. Install the Pi Dashboard (React + Node)
-
-The Dashboard lives in `~/Dashboard` and contains:
-
-- `client/` — React 19 + Vite 7 + TailwindCSS 4 frontend
-- `server/` — Express 5 + TypeScript + Socket.IO API
-- `docker-compose.yml` — brings up Neo4j + the dashboard
-
-### One-time clone & configure
-
-```bash
-cd ~
-git clone <your-repo-url> Dashboard
-cd Dashboard
+git clone https://github.com/collierdev/blackbox-homelab.git
+cd blackbox-homelab/Dashboard
 
 cp .env.example .env
-# Edit .env — at minimum set these:
+# Edit .env — at minimum:
 #   NEO4J_PASSWORD=<strong password>
 #   ENCRYPTION_SECRET=$(openssl rand -base64 32)
 #   HA_URL=http://192.168.50.39:8123
-#   HA_TOKEN=<paste Long-Lived Access Token from HA>
-nano .env
-```
+#   HA_TOKEN=<Home Assistant Long-Lived Access Token>
 
-### Start it
-
-```bash
 docker compose up -d --build
+
+# Pull a local model (first run only)
+ollama pull llama3.2
+
+# Access the dashboard
+open http://192.168.50.39:8080
 ```
 
-Open `http://localhost:8080` (or `http://blackbox/`).
-
-### Run from source (development mode)
-
-```bash
-cd ~/Dashboard
-npm install                       # root tooling (concurrently, playwright)
-(cd server && npm install)
-(cd client && npm install)
-npm run dev                       # starts client (vite) + server (nodemon) together
-```
-
-- Client dev server: `http://localhost:5173`
-- API server: `http://localhost:8080`
-
-### OAuth (optional)
-
-In **Settings → Calendar → OAuth Provider Setup** paste Google or Microsoft client IDs/secrets — they're encrypted with `ENCRYPTION_SECRET` and stored in Neo4j, so you don't have to commit them. Or upload a `.zip`/`.ics` Google Takeout export if you'd rather skip OAuth entirely.
+For the full per-service setup (Home Assistant, Mosquitto, go2rtc, Jellyfin, n8n, nginx, dnsmasq, ZFS, etc.), see the [platform README](https://github.com/collierdev/blackbox-homelab/blob/master/README.md).
 
 ---
 
-## 16. Optional Services
+## Demo
 
-| Service | Purpose | Quick install |
-|--------|--------|--------------|
-| **CouchDB** | Obsidian LiveSync vault backend | `docker run -d --name couchdb -p 5984:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=... couchdb:3` |
-| **Ollama** | Local LLM runtime (used by AI chat panel) | `curl -fsSL https://ollama.com/install.sh \| sh` then `ollama pull llama3.2` |
-| **Tailscale** | Encrypted remote access | `curl -fsSL https://tailscale.com/install.sh \| sh && sudo tailscale up` |
-| **Samba** | Windows file shares for ZFS datasets | `sudo apt install samba` and edit `/etc/samba/smb.conf` |
-| **ZFS** | Snapshots + compression for `/blackbox` | `sudo apt install zfsutils-linux` then `zpool create blackbox /dev/sda` |
-| **fail2ban** | SSH brute-force protection | `sudo apt install fail2ban` (already in Section 3) |
-| **GitHub CLI** | `gh` for repo management | `sudo apt install gh && gh auth login` |
-| **Obsidian** | Markdown notes app (AppImage) | Drop the AppImage in `~/obsidian/` |
+https://www.youtube.com/watch?v=jWm0GwgtvWo
+Screenshots can be found in the GitHub repo under Dashboard/docs/Screenshots
 
 ---
 
-## 17. Open Source Software & Libraries Used
+## Testing & Error Handling
 
-### Server-side platform
+The system is designed for graceful degradation — no single failure bricks the dashboard.
 
-| Project | Role | License |
-|--------|------|--------|
-| Debian 13 | OS | Various FOSS |
-| Docker Engine | Containers | Apache-2.0 |
-| nginx | Reverse proxy | BSD-2-Clause |
-| dnsmasq | Local DNS | GPL-2.0 |
-| Mosquitto | MQTT broker | EPL/EDL |
-| Home Assistant | Smart-home hub | Apache-2.0 |
-| govee2mqtt (wez/govee2mqtt) | Govee MQTT bridge | MIT |
-| go2rtc | Camera multiplexer | MIT |
-| n8n | Workflow automation | Sustainable Use License |
-| Jellyfin | Media server | GPL-2.0 |
-| Plex | Media server | Proprietary (free tier) |
-| Portainer CE | Docker UI | zlib |
-| Neo4j Community | Graph DB | GPL-3.0 |
-| CouchDB | LiveSync vault | Apache-2.0 |
-| Ollama | Local LLM runtime | MIT |
-| Samba | SMB file sharing | GPL-3.0 |
-| ZFS on Linux | Filesystem | CDDL |
-| Tailscale | Mesh VPN | BSD-3-Clause |
-| fail2ban | Intrusion prevention | GPL-2.0 |
+### E2E Testing (Playwright)
 
-### Pi Dashboard — server (`server/package.json`)
+End-to-end tests live in `~/Dashboard/e2e-tests` and run against the full stack using **@playwright/test 1.57**. Tests verify critical user flows across all seven views: dashboard loads and renders live system stats, Smart Home toggles propagate to Home Assistant, calendar sync round-trips through OAuth, AI Chat sends a prompt and streams a response from Ollama, Planner drag-and-drop reorders persist to Neo4j, and the Vault editor opens/saves files correctly. Tests run in headless Chromium on the Pi itself or from a workstation pointed at the dashboard URL.
 
-- **express 5** — HTTP framework
-- **socket.io 4** — real-time stats stream
-- **dockerode 4** — Docker Engine API client
-- **systeminformation 5** — CPU, memory, temperature, disk metrics
-- **neo4j-driver 5** — Cypher client
-- **googleapis 130** + **@microsoft/microsoft-graph-client 3** — calendar sync
-- **tsdav 2** — CalDAV client
-- **node-ical 0.26** + **rrule 2** — `.ics` parsing & recurrence
-- **adm-zip** — Google Takeout `.zip` import
-- **chokidar** — TODO.md file watching
-- **cron 3** — scheduled syncs
-- **date-fns 3** — date math
-- **uuid 9** — id generation
-- **cors 2** — CORS middleware
-- **TypeScript 5.9**, **ts-node**, **nodemon** — dev tooling
+### Linting & Type Safety
 
-### Pi Dashboard — client (`client/package.json`)
+**ESLint 9** with **typescript-eslint 8** and **eslint-plugin-react-hooks** enforces consistent code quality across both client and server. **TypeScript 5.9** in strict mode catches type errors at compile time — every API route handler, Socket.IO event, and React component is fully typed. The dev loop uses **nodemon** + **ts-node** for hot-reload on the server and **Vite 7** HMR on the client, with **concurrently** orchestrating both processes via `npm run dev`.
 
-- **react 19** + **react-dom 19**
-- **vite 7** — build tool
-- **typescript 5.9**
-- **tailwindcss 4** + **@tailwindcss/vite**
-- **@tanstack/react-query 5** — server state
-- **socket.io-client 4** — live metrics
-- **react-hook-form 7** + **@hookform/resolvers 3** + **zod 3** — forms & validation
-- **@dnd-kit/{core,sortable,utilities}** — drag-and-drop planner
-- **d3 7** — charting
-- **lucide-react** — icons
-- **react-markdown 10** — markdown rendering (AI chat, notes)
-- **eslint 9** + **typescript-eslint 8** + **eslint-plugin-react-hooks/refresh** — linting
+### Form & Schema Validation
 
-### Test tooling
+All user-facing forms use **react-hook-form 7** with **Zod 3** schemas (via **@hookform/resolvers**) for client-side validation. Server-side API endpoints mirror those Zod schemas to validate request bodies, sanitize file paths, model names, and prompt content, and enforce maximum prompt lengths.
 
-- **@playwright/test 1.57** — E2E (`~/Dashboard/e2e-tests`)
-- **concurrently 9** — runs client + server together in dev
+### Runtime Error Handling
+
+**API fallback chain** — When Claude is unreachable (network outage, rate limit, invalid key), the backend falls back to Ollama-only mode. A banner indicates "Cloud AI unavailable — running local models only." Complex tasks queue with exponential backoff (2s initial, 60s max, 5 retries).
+
+**Container recovery** — All Docker services run with `restart: unless-stopped`. A health check endpoint pings Ollama every 30 seconds; if unresponsive, Docker restarts the container and the backend temporarily routes all queries to Claude.
+
+**File system safety** — Path traversal prevention (all paths sanitized against vault root), atomic file writes (temp + rename to prevent corruption), and extension-based filtering (editor only opens text files). **chokidar** watches the vault directory for external changes and pushes updates to the client via Socket.IO in real time.
+
+**Real-time resilience** — The System Dashboard and Planner cache their last-rendered state in the browser. If the backend becomes unreachable, the display continues showing recent data with a "Last updated" indicator rather than going blank.
+
+**Token-aware rate limiting** — Anthropic API calls are wrapped with a rate limiter that tracks tokens-per-minute usage and preemptively delays requests approaching the limit. Usage stats are exposed at `/api/stats` for monitoring.
 
 ---
 
-## 18. Maintenance
+## Future Improvements
 
-```bash
-# Update host packages
-sudo apt update && sudo apt full-upgrade -y
-
-# Update Docker images
-docker compose pull && docker compose up -d
-docker image prune -f
-
-# Watch dashboard logs
-docker logs -f pi-dashboard
-docker logs -f pi-dashboard-neo4j
-
-# Rebuild dashboard from source
-cd ~/Dashboard
-docker compose up -d --build dashboard
-
-# ZFS health
-zpool status blackbox
-zfs list -t snapshot | head
-
-# nginx + DNS
-sudo nginx -t && sudo systemctl reload nginx
-nslookup ha.blackbox 127.0.0.1
-```
-
-### Backup checklist
-
-- `~/Dashboard/.env` — secrets (not in git)
-- Docker volumes: `homeassistant_config`, `n8n_data`, `jellyfin_config`, `portainer_data`, `neo4j_data`, `couchdb_data`
-- `~/mosquitto/config/passwd`
-- `~/govee2mqtt/govee.toml`
-- `~/go2rtc/go2rtc.yaml`
-- ZFS auto-snapshots already cover `/blackbox/*`
+- **Bug Fixes** — Continue to fix bugs including adding more fallbacks and testing features.
+- **Smoother Integrations** — Make the process of adding new smart home items and integrations more streamlines.
+- **Better local AI** — As smaller, more capable models ship (Phi-4, Gemma 3), re-evaluate what runs locally. Goal: 80%+ of queries on-device.
+- **MCP server ecosystem** — Expose dashboard capabilities as MCP tools so external AI agents (Claude Desktop, etc.) can query the personal knowledge base.
+- **Voice interface** — Wake-word detection + speech-to-text for hands-free interaction with the wall-mounted planner display.
+- **Cheaper hardware** — Explore Orange Pi, older Pi models, or repurposed thin clients to push BOM under $100.
+- **Gemini integration** — Add Gemini 1.5 Flash as a mid-tier routing option between local models and Claude.
+- **Multi-Pi cluster** — Document a 2-Pi setup with automatic failover for users who want redundancy.
 
 ---
 
-## License
+## Acknowledgments
 
-The dashboard source is your own. Third-party components retain their upstream licenses (see Section 17).
+### Platform & Infrastructure
+[Docker](https://www.docker.com) (containerization) · [nginx](https://nginx.org) (reverse proxy) · [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) (local DNS) · [ZFS on Linux](https://openzfs.org) (filesystem + snapshots) · [Samba](https://www.samba.org) (SMB file sharing) · [Tailscale](https://tailscale.com) (mesh VPN) · [Portainer](https://www.portainer.io) (Docker UI)
+
+### Smart Home & Media
+[Home Assistant](https://www.home-assistant.io) (smart home hub) · [Mosquitto](https://mosquitto.org) (MQTT broker) · [govee2mqtt](https://github.com/wez/govee2mqtt) (Govee device bridge) · [go2rtc](https://github.com/AlexxIT/go2rtc) (camera streaming) · [Jellyfin](https://jellyfin.org) (media server) · [n8n](https://n8n.io) (workflow automation)
+
+### AI & LLM
+[Anthropic](https://anthropic.com) (Claude API + Claude Code + Claude Cowork + Claude Design) · [Ollama](https://ollama.com) (local LLM serving on ARM64) · [ChatGPT](https://chatgpt.com)(architecture design)· [Google](https://stitch.withgoogle.com/)(Google Stitch + Nonbanana)
+
+### Databases
+[Neo4j](https://neo4j.com) (graph database — tasks, planner, OAuth tokens) · [CouchDB](https://couchdb.apache.org) (Obsidian LiveSync vault backend)
+
+### Server Stack (Express / Node)
+[Express 5](https://expressjs.com) · [Socket.IO 4](https://socket.io) (real-time stats) · [dockerode 4](https://github.com/apocas/dockerode) (Docker API client) · [systeminformation 5](https://systeminformation.io) (hardware metrics) · [neo4j-driver 5](https://neo4j.com/docs/javascript-manual/) · [googleapis 130](https://github.com/googleapis/google-api-nodejs-client) + [@microsoft/microsoft-graph-client 3](https://github.com/microsoftgraph/msgraph-sdk-javascript) (calendar sync) · [tsdav 2](https://github.com/nicholasgasior/tsdav) (CalDAV) · [node-ical 0.26](https://github.com/jens-maus/node-ical) + [rrule 2](https://github.com/jakubroztocil/rrule) (.ics parsing & recurrence) · [adm-zip](https://github.com/cthackers/adm-zip) (Google Takeout import) · [chokidar](https://github.com/paulmillr/chokidar) (file watching) · [cron 3](https://github.com/kelektiv/node-cron) · [date-fns 3](https://date-fns.org) · [uuid 9](https://github.com/uuidjs/uuid) · [cors 2](https://github.com/expressjs/cors)
+
+### Client Stack (React)
+[React 19](https://react.dev) + [React DOM 19](https://react.dev) · [Vite 7](https://vite.dev) · [TailwindCSS 4](https://tailwindcss.com) · [@tanstack/react-query 5](https://tanstack.com/query) (server state) · [socket.io-client 4](https://socket.io) · [react-hook-form 7](https://react-hook-form.com) + [Zod 3](https://zod.dev) (forms & validation) · [@dnd-kit](https://dndkit.com) (drag-and-drop planner) · [d3 7](https://d3js.org) (charting) · [lucide-react](https://lucide.dev) (icons) · [react-markdown 10](https://github.com/remarkjs/react-markdown) (markdown rendering)
+
+### Dev & Test Tooling
+[TypeScript 5.9](https://www.typescriptlang.org) · [@playwright/test 1.57](https://playwright.dev) (E2E testing) · [ESLint 9](https://eslint.org) + [typescript-eslint 8](https://typescript-eslint.io) (linting) · [concurrently 9](https://github.com/open-cli-tools/concurrently) (dev orchestration) · [nodemon](https://nodemon.io) + [ts-node](https://typestrong.org/ts-node/) (server dev loop)
