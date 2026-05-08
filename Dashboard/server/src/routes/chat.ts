@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 const router = Router();
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+const AGENT_URL = process.env.AGENT_URL || 'http://192.168.50.39:8001';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -254,6 +255,88 @@ router.post('/pull', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error pulling model:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Pull failed' });
+  }
+});
+
+// ── Pi Agent (LangGraph + Memory) ──────────────────────────────────────────
+
+router.post('/agent', async (req: Request, res: Response) => {
+  const { model, messages } = req.body as { model?: string; messages: ChatMessage[] };
+
+  if (!messages || !Array.isArray(messages)) {
+    res.status(400).json({ error: 'Messages are required' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const controller = new AbortController();
+  // No fixed deadline — only abort when the client disconnects.
+  // The agent's own heartbeat loop keeps the connection alive during model loading.
+  res.on('close', () => { controller.abort(); });
+
+  try {
+    const response = await fetch(`${AGENT_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: model || 'llama3.2:latest', messages }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      res.write('data: [ERROR] Agent unavailable — is pi-agent running?\n\n');
+      res.end();
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop()!;
+      for (const line of lines) {
+        if (line.trim()) res.write(line + '\n');
+      }
+    }
+    if (buffer.trim()) res.write(buffer + '\n');
+    res.end();
+  } catch (err: unknown) {
+    const msg = err instanceof Error && err.name === 'AbortError'
+      ? '[ERROR] Connection closed by client'
+      : '[ERROR] Agent connection failed';
+    res.write(`data: ${msg}\n\n`);
+    res.end();
+  }
+});
+
+router.get('/agent/health', async (_req: Request, res: Response) => {
+  try {
+    const response = await fetch(`${AGENT_URL}/health`, { signal: AbortSignal.timeout(3000) });
+    const data = await response.json() as Record<string, unknown>;
+    res.json({ available: true, ...data });
+  } catch {
+    res.json({ available: false });
+  }
+});
+
+router.post('/agent/daily-brief', async (_req: Request, res: Response) => {
+  try {
+    const response = await fetch(`${AGENT_URL}/daily-brief`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(300_000),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(503).json({ error: 'Agent unavailable' });
   }
 });
 

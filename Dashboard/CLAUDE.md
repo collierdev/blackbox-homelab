@@ -37,7 +37,7 @@ Key components:
 - `src/components/SystemStats.tsx` - CPU, RAM, disk, temp, network displays + collapsible tables
 - `src/components/Services.tsx` - Service cards with start/stop/restart
 - `src/components/ServiceCard.tsx` - Individual service control card
-- `src/components/ChatBot.tsx` - Floating AI chat (Ollama/Claude)
+- `src/components/ChatBot.tsx` - Floating AI chat (Pi Agent/Ollama/Claude) with session management sidebar and LangGraph trace panel
 - `src/components/HomeAssistant.tsx` - Smart home device control panel
 - `src/components/homeassistant/*.tsx` - Device-specific cards (Light, Switch, Climate, MediaPlayer)
 - `src/components/go2rtc/*.tsx` - Security camera components (CamerasSection, Go2RTCCameraCard)
@@ -62,7 +62,7 @@ Key files:
 - `src/index.ts` - Main server, WebSocket setup, static file serving
 - `src/routes/system.ts` - GET /api/system/stats, /api/system/cpu-history
 - `src/routes/services.ts` - GET/POST /api/services for Docker/systemd control
-- `src/routes/chat.ts` - POST /api/chat/ollama, /api/chat/claude
+- `src/routes/chat.ts` - POST /api/chat/ollama, /api/chat/claude, /api/chat/agent (SSE proxy to pi-agent); GET /api/chat/agent/health; POST /api/chat/agent/daily-brief
 - `src/routes/homeassistant.ts` - Home Assistant REST endpoints
 - `src/routes/go2rtc.ts` - go2rtc camera API endpoints
 - `src/utils/systemInfo.ts` - CPU, RAM, temp, disk, network data collection
@@ -83,6 +83,9 @@ Key files:
 | `/api/chat/models` | GET | List Ollama models |
 | `/api/chat/ollama` | POST | Chat with local Ollama |
 | `/api/chat/claude` | POST | Chat with Claude API |
+| `/api/chat/agent` | POST | SSE streaming proxy to pi-agent (no fixed timeout) |
+| `/api/chat/agent/health` | GET | Pi Agent health probe (3 s timeout) |
+| `/api/chat/agent/daily-brief` | POST | Trigger daily briefing generation (5 min timeout) |
 | `/api/homeassistant/status` | GET | HA connection status |
 | `/api/homeassistant/devices` | GET | List grouped HA devices |
 | `/api/homeassistant/entities/:id/toggle` | POST | Toggle entity on/off |
@@ -118,12 +121,47 @@ The dashboard monitors and controls these services:
 | Plex | systemd | http://plex.blackbox | http://192.168.50.39:32400/web |
 | go2rtc | systemd | http://go2rtc.blackbox | http://192.168.50.39:1984 |
 | Ollama | systemd | - | http://localhost:11434 |
+| pi-agent | systemd | http://agent.blackbox | http://192.168.50.39:8001 |
+| nginx | systemd | - | Port 80 (reverse proxy) |
 | Tailscale | systemd | - | - |
 | Samba | systemd | `\\blackbox` | `\\192.168.50.39` |
 
 To add a new service, edit `server/src/utils/docker.ts`:
 - Add to `SERVICES_CONFIG` object with type, url, and port
 - For systemd services, add to `systemdServices` array
+
+## Pi Agent Integration
+
+The dashboard connects to Pi Agent as its default AI chat provider. Pi Agent is a FastAPI + LangGraph service at `http://192.168.50.39:8001`, configured via the `AGENT_URL` environment variable.
+
+### Provider Selection
+
+| Option | Provider value | Backend endpoint |
+|--------|---------------|-----------------|
+| ★ Pi Agent (LangGraph) | `agent` | `/api/chat/agent` (SSE) |
+| Ollama (Local) | `ollama` | `/api/chat/ollama` |
+| Claude API | `claude` | `/api/chat/claude` |
+
+`agent` is the default provider.
+
+### Session Management
+
+Sessions are persisted in `localStorage` under `pi_agent_sessions` (max 50). The `SessionSidebar` component shows running sessions and history grouped by provider and date, with per-session rename and delete.
+
+### Trace Panel
+
+When using Pi Agent, the `TracePanel` component visualises LangGraph execution steps emitted as `[TRACE]` lines. `[CANDIDATES]` JSON blocks show collapsible document/video retrieval results with an elapsed-time counter.
+
+### SSE Protocol (agent stream)
+
+| Token | Meaning |
+|-------|---------|
+| `[TRACE] <step>` | LangGraph node step |
+| `[CANDIDATES] <json>` | Retrieved documents/videos |
+| Plain text | Streamed answer tokens |
+| `[DONE]` | End of stream |
+
+The dashboard proxy at `/api/chat/agent` forwards the stream with client-disconnect abort; no fixed server-side timeout is applied.
 
 ## Common Tasks
 

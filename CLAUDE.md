@@ -59,6 +59,7 @@ Custom subagents for specialized tasks. See `~/software-report/CLAUDE_AGENTS.md`
 | **ZFS** | System | - | Pool: `blackbox` at `/blackbox` |
 | **CouchDB** | Docker | https://vault.blackbox | http://192.168.50.39:5984 |
 | **Obsidian** | AppImage | - | `~/obsidian/Obsidian-1.12.7-arm64.AppImage` |
+| **Pi Agent** | Systemd | http://agent.blackbox | http://192.168.50.39:8001 |
 
 ### nginx Reverse Proxy + Local DNS
 
@@ -89,7 +90,7 @@ Custom dashboard for system monitoring and service management. Source code in `~
 
 **Access**: http://blackbox/ (or http://192.168.50.39:8080)
 
-**Features**: Real-time CPU/memory/disk/temp stats, service start/stop/restart, network services table with IPs/ports, memory usage by process (sortable), AI chat integration (Ollama/Claude), Home Assistant smart home control (lights, switches, climate, media players, cameras)
+**Features**: Real-time CPU/memory/disk/temp stats, service start/stop/restart, network services table with IPs/ports, memory usage by process (sortable), AI chat integration (Pi Agent/Ollama/Claude) with session history and LangGraph trace panel, Home Assistant smart home control (lights, switches, climate, media players, cameras)
 
 **Docker run command** (requires `--pid=host --privileged` for host system access):
 ```bash
@@ -99,6 +100,27 @@ sudo docker run -d --name pi-dashboard --restart=always \
 ```
 
 **Note**: Runs on port 8080 (proxied through nginx on port 80)
+
+### Pi Agent
+
+LangGraph-powered AI assistant running as a systemd service. Source code in `~/pi-agent/`. Default chat provider in the Pi Dashboard.
+
+**Access**: http://agent.blackbox (or http://192.168.50.39:8001)
+
+**Architecture**: FastAPI + LangGraph state machine. Router classifies queries into `chat`, `task`, `planning`, `knowledge`, `web_search`, `video_search`, routes through knowledge/planner nodes, builds a prompt, then runs reflection and memory-write post-generation.
+
+**Memory systems**:
+- ChromaDB vector DB at `~/pi-agent/data/chroma/` (nomic-embed-text embeddings via Ollama)
+- SQLite at `~/pi-agent/data/memory.db` (activity log, active tasks, working context)
+- Obsidian vault at `/blackbox/documents/vault/` (RAG source, indexed on startup)
+
+**Management**:
+```bash
+sudo systemctl status pi-agent      # Check service status
+sudo systemctl restart pi-agent     # Restart service
+sudo journalctl -u pi-agent -n 50   # View logs
+curl http://192.168.50.39:8001/     # Health check
+```
 
 ## Common Commands
 
@@ -165,6 +187,9 @@ testparm                            # Validate smb.conf
 | CouchDB config | Docker volume: `couchdb_config` |
 | Obsidian AppImage | `~/obsidian/` |
 | SSL certificates | `/etc/nginx/ssl/` |
+| Pi Agent source | `~/pi-agent/` |
+| Pi Agent vector DB | `~/pi-agent/data/chroma/` |
+| Pi Agent SQLite DB | `~/pi-agent/data/memory.db` |
 
 ## ZFS Storage (Pool: blackbox)
 

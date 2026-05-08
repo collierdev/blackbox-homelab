@@ -7,6 +7,46 @@ Use this for troubleshooting or rollback reference.
 
 ---
 
+## May 8, 2026
+
+### Pi Agent (LangGraph AI Assistant)
+- **Version**: Latest (local source at `~/pi-agent/`)
+- **Type**: Systemd service (FastAPI + LangGraph)
+- **Service file**: `/etc/systemd/system/pi-agent.service`
+- **Access**: http://agent.blackbox or http://192.168.50.39:8001
+- **Port**: 8001
+- **Memory**: ChromaDB (`~/pi-agent/data/chroma/`), SQLite (`~/pi-agent/data/memory.db`), Obsidian vault RAG (`/blackbox/documents/vault/`)
+- **LangGraph nodes**: Pre-graph: router → knowledge/planner → build_prompt. Post-graph: reflection → memory_write
+- **Router intents**: `chat`, `task`, `planning`, `knowledge`, `web_search`, `video_search`
+- **Tools**: DuckDuckGo web search (5 results), YouTube with LLM re-ranking (8→3–5)
+- **Daily briefing**: Cron at 8 AM via `POST /daily-brief`
+- **To stop**:
+```bash
+sudo systemctl stop pi-agent
+sudo systemctl disable pi-agent
+```
+- **To remove**:
+```bash
+sudo systemctl stop pi-agent && sudo systemctl disable pi-agent
+sudo rm /etc/systemd/system/pi-agent.service
+sudo systemctl daemon-reload
+sudo rm /etc/nginx/sites-enabled/agent.blackbox
+sudo rm /etc/nginx/sites-available/agent.blackbox
+sudo nginx -t && sudo systemctl reload nginx
+# Remove data (irreversible):
+rm -rf ~/pi-agent/data/chroma ~/pi-agent/data/memory.db
+```
+
+### Pi Dashboard — Pi Agent Integration
+- **Files modified**:
+  - `client/src/components/ChatBot.tsx` — `agent` provider (default), `SessionSidebar`, `TracePanel`, `Session` interface, localStorage persistence (`pi_agent_sessions`, max 50)
+  - `client/src/types/index.ts` — `traceLines?: string[]` added to `ChatMessage`
+  - `server/src/routes/chat.ts` — `/api/chat/agent` (SSE proxy), `/api/chat/agent/health` (3 s probe), `/api/chat/agent/daily-brief` (5 min timeout)
+  - `server/src/utils/docker.ts` — `pi-agent` and `nginx` added to `SERVICES_CONFIG` and systemd monitoring
+- **AGENT_URL env var**: defaults to `http://192.168.50.39:8001`
+
+---
+
 ## April 1, 2026
 
 ### CouchDB 3.5.1 (Obsidian LiveSync Backend)

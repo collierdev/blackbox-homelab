@@ -60,7 +60,7 @@ Unified calendar + tasks view with month / week / day / 2-month / circular layou
 
 ![AI Chat](docs/screenshots/04-ai-chat.png)
 
-Streaming chat console wired to **Ollama** by default (model `llama3.2:latest` is shown) with optional Claude API fallback. Includes a context attachment chip, voice input, and contextual command suggestions ("Run diagnostic on router") backed by `/api/chat/ollama` and `/api/chat/claude`.
+Streaming chat console wired to the **Pi Agent (LangGraph)** by default, with Ollama and Claude API as alternative providers. The session sidebar lists running sessions and history grouped by provider and date. The trace panel visualises LangGraph execution steps — router classification, knowledge retrieval, and web/video search candidates — as the agent thinks. Backed by `/api/chat/agent` (SSE), `/api/chat/ollama`, and `/api/chat/claude`.
 
 ### Planner
 
@@ -98,7 +98,7 @@ Modal preferences for **System** (node name shown in header, default landing tab
 | Cameras | go2rtc |
 | Media | Jellyfin, Plex |
 | Automation | n8n |
-| AI / LLM | Ollama (local models) |
+| AI / LLM | Pi Agent (LangGraph + FastAPI), Ollama (local models) |
 | Database | Neo4j (graph), CouchDB (LiveSync vault) |
 | Dashboard | Custom React 19 + Express 5 app |
 

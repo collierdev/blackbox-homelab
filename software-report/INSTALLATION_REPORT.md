@@ -43,6 +43,7 @@
 | **Playwright MCP Server** | Latest | Configured | NPX (on-demand) | Feb 3, 2026 |
 | **CouchDB** | 3.5.1 | Running | https://vault.blackbox | Apr 1, 2026 |
 | **Obsidian** | 1.12.7 | Installed | `~/obsidian/` (AppImage) | Apr 1, 2026 |
+| **Pi Agent** | Latest | Running | http://agent.blackbox | May 8, 2026 |
 
 ---
 
@@ -74,6 +75,7 @@
 | Home Assistant | http://ha.blackbox | 8123 | Subdomain |
 | go2rtc | http://go2rtc.blackbox | 1984 | Subdomain |
 | CouchDB (LiveSync) | https://vault.blackbox | 5984 | Subdomain (HTTPS) |
+| Pi Agent | http://agent.blackbox | 8001 | Subdomain |
 
 **Note**: All services remain accessible on their original ports for debugging/direct access.
 
@@ -132,6 +134,53 @@ To use friendly URLs from all devices on the network:
 1. Set router DHCP/DNS to: `192.168.50.39` (primary), `8.8.8.8` (secondary)
 2. Renew DHCP on clients: `ipconfig /release && ipconfig /renew` (Windows)
 3. Test: `ping blackbox` should resolve to `192.168.50.39`
+
+---
+
+## Pi Agent
+
+A LangGraph-powered AI assistant running as a systemd service. Default chat provider in the Pi Dashboard.
+
+- **URL**: http://agent.blackbox (or http://192.168.50.39:8001)
+- **Service**: `pi-agent.service`
+- **Source**: `~/pi-agent/`
+
+### Architecture
+
+FastAPI + LangGraph state machine. Router classifies queries into `chat`, `task`, `planning`, `knowledge`, `web_search`, `video_search`. Pre-graph: router → knowledge/planner → build_prompt. Post-graph: reflection → memory_write.
+
+### Memory Systems
+
+| Store | Path | Purpose |
+|-------|------|---------|
+| ChromaDB | `~/pi-agent/data/chroma/` | Vector embeddings (nomic-embed-text via Ollama) |
+| SQLite | `~/pi-agent/data/memory.db` | Activity log, active tasks, working context |
+| Obsidian vault | `/blackbox/documents/vault/` | RAG source, indexed on startup |
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `GET /` | GET | Health check + service info |
+| `POST /chat` | POST | SSE streaming chat |
+| `POST /daily-brief` | POST | Generate daily briefing |
+| `POST /index-vault` | POST | Re-index Obsidian vault |
+| `GET /memory/recent` | GET | Recent memory entries |
+| `POST /memory/task` | POST | Add a task to memory |
+| `GET /search` | GET | Search knowledge base |
+
+### Management
+
+```bash
+sudo systemctl status pi-agent      # Check status
+sudo systemctl restart pi-agent     # Restart
+sudo journalctl -u pi-agent -n 50   # View logs
+curl http://192.168.50.39:8001/     # Health check
+```
+
+### Daily Briefing
+
+Cron runs at 8 AM daily calling `POST /daily-brief`. Result is surfaced in the Pi Dashboard.
 
 ---
 

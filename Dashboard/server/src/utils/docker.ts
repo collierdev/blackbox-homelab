@@ -95,17 +95,24 @@ export interface ServiceInfo {
 }
 
 const SERVICES_CONFIG: Record<string, { type: 'docker' | 'systemd'; url?: string; port?: number }> = {
-  jellyfin: { type: 'docker', url: 'http://jellyfin.blackbox', port: 8096 },
-  n8n: { type: 'docker', url: 'http://n8n.blackbox', port: 5678 },
-  portainer: { type: 'docker', url: 'http://blackbox/portainer', port: 9443 },
-  homeassistant: { type: 'docker', url: 'http://ha.blackbox', port: 8123 },
-  go2rtc: { type: 'docker', url: 'http://go2rtc.blackbox', port: 1984 },
-  'pi-dashboard-neo4j': { type: 'docker', url: 'http://blackbox:7474', port: 7474 },
-  neo4j: { type: 'docker', url: 'http://blackbox:7474', port: 7474 },
-  plex: { type: 'systemd', url: 'http://plex.blackbox', port: 32400 },
-  ollama: { type: 'systemd', url: 'http://localhost:11434', port: 11434 },
-  tailscaled: { type: 'systemd' },
-  samba: { type: 'systemd', port: 445 }
+  // Media & automation
+  jellyfin:            { type: 'docker',  url: 'http://jellyfin.blackbox',   port: 8096 },
+  n8n:                 { type: 'docker',  url: 'http://n8n.blackbox',        port: 5678 },
+  portainer:           { type: 'docker',  url: 'http://blackbox/portainer',  port: 9443 },
+  homeassistant:       { type: 'docker',  url: 'http://ha.blackbox',         port: 8123 },
+  go2rtc:              { type: 'docker',  url: 'http://go2rtc.blackbox',     port: 1984 },
+  plex:                { type: 'systemd', url: 'http://plex.blackbox',       port: 32400 },
+  // AI stack
+  'pi-agent':          { type: 'systemd', url: 'http://agent.blackbox',      port: 8001 },
+  ollama:              { type: 'systemd', url: 'http://localhost:11434',      port: 11434 },
+  // Databases
+  'pi-dashboard-neo4j':{ type: 'docker',  url: 'http://blackbox:7474',       port: 7474 },
+  neo4j:               { type: 'docker',  url: 'http://blackbox:7474',       port: 7474 },
+  couchdb:             { type: 'docker',  url: 'https://vault.blackbox',     port: 5984 },
+  // Networking / system
+  tailscaled:          { type: 'systemd' },
+  samba:               { type: 'systemd', port: 445 },
+  nginx:               { type: 'systemd', port: 80 },
 };
 
 export async function getDockerContainers(): Promise<ServiceInfo[]> {
@@ -149,7 +156,7 @@ export async function getDockerContainers(): Promise<ServiceInfo[]> {
 }
 
 export async function getSystemdServices(): Promise<ServiceInfo[]> {
-  const systemdServices = ['plexmediaserver', 'ollama', 'tailscaled', 'smbd'];
+  const systemdServices = ['plexmediaserver', 'ollama', 'pi-agent', 'tailscaled', 'smbd', 'nginx'];
   const services: ServiceInfo[] = [];
   const serviceData = loadServiceData();
 
@@ -158,7 +165,7 @@ export async function getSystemdServices(): Promise<ServiceInfo[]> {
       // Use nsenter to run systemctl in the host's namespace (PID 1)
       const { stdout } = await execAsync(`nsenter -t 1 -m -u -i -n -p -- systemctl is-active ${serviceName} 2>/dev/null || echo "inactive"`);
       const isActive = stdout.trim() === 'active';
-      const displayName = serviceName === 'plexmediaserver' ? 'plex' : serviceName === 'smbd' ? 'samba' : serviceName;
+      const displayName = serviceName === 'plexmediaserver' ? 'plex' : serviceName === 'smbd' ? 'samba' : serviceName === 'pi-agent' ? 'pi-agent' : serviceName;
       const config = SERVICES_CONFIG[displayName];
 
       services.push({
@@ -172,7 +179,7 @@ export async function getSystemdServices(): Promise<ServiceInfo[]> {
         customIcon: serviceData.customIcons[displayName.toLowerCase()]
       });
     } catch {
-      const displayName = serviceName === 'plexmediaserver' ? 'plex' : serviceName === 'smbd' ? 'samba' : serviceName;
+      const displayName = serviceName === 'plexmediaserver' ? 'plex' : serviceName === 'smbd' ? 'samba' : serviceName === 'pi-agent' ? 'pi-agent' : serviceName;
       services.push({
         id: serviceName,
         name: displayName,

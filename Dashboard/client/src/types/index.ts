@@ -72,6 +72,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  traceLines?: string[];   // [TRACE] events captured during agent pre-graph
 }
 
 export interface OllamaModel {
